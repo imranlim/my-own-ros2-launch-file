@@ -1,0 +1,1 @@
+/home/al/ros2_ws/src/robot_description/scripts/start_node_red.sh

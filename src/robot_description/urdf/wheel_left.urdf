@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<robot name="wheel">
+  <link name="left_wheel_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.75" length="0.2"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>

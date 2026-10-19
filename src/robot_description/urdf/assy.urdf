@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="myfirst">
+
+  <!-- 1. Include semua fail URDF -->
+  <xacro:include filename="$(find robot_description)/urdf/wheel_right.urdf" />
+  <xacro:include filename="$(find robot_description)/urdf/wheel_left.urdf" />
+  <xacro:include filename="$(find robot_description)/urdf/body.urdf" />
+  <xacro:include filename="$(find robot_description)/urdf/shaft.urdf" />
+  <xacro:include filename="$(find robot_description)/urdf/caster.urdf" />
+
+
+
+  <!-- 3. Sambungkan semua part guna <joint> -->
+
+  <!-- Joint Tayar Kanan -->
+  <joint name="base_to_right_wheel" type="continuous">
+    <parent link="base_link"/>
+    <child link="right_wheel_link"/>
+    <origin xyz="-1.1 -1.3 0.0" rpy="1.5708 0 1.5708"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <!-- Joint Tayar Kiri -->
+  <joint name="base_to_left_wheel" type="continuous">
+    <parent link="base_link"/>
+    <child link="left_wheel_link"/>
+    <origin xyz="1.1 -1.3 0.0" rpy="1.5708 0 1.5708"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <!-- Joint Shaft -->
+  <joint name="base_to_shaft" type="fixed">
+    <parent link="base_link"/>
+    <child link="shaft_link"/>
+    <origin xyz="0 1.3 -0.35" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Joint Caster -->
+  <joint name="shaft_to_caster" type="fixed">
+    <parent link="shaft_link"/>
+    <child link="caster_link"/>
+    <origin xyz="0 -0.07 -0.15" rpy="1.5708 0 1.5708"/>
+  </joint>
+
+</robot>
