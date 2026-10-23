@@ -1,11 +1,31 @@
 <?xml version="1.0"?>
-<robot name="body">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="body">
+
   <link name="base_link">
-    <visual>
-      
+
+
+   <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-       <box size="2 4 0.5"/>
+        <box size="4 2 0.5"/>
       </geometry>
     </visual>
+
+
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="5.0"/>
+    <inertia ixx="1.77" ixy="0.0" ixz="0.0" iyy="6.875" iyz="0.0" izz="8.333"/>
+    </inertial>
+
+    
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="4 2 0.5"/>
+      </geometry>
+    </collision>
+    
   </link>
 </robot>

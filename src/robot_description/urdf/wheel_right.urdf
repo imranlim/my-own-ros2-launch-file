@@ -1,10 +1,33 @@
 <?xml version="1.0"?>
 <robot name="wheel">
   <link name="right_wheel_link">
+
     <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
       <geometry>
         <cylinder radius="0.75" length="0.2"/>
       </geometry>
     </visual>
+
+
+    <inertial>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <mass value="0.5"/>
+      <inertia ixx="0.078" ixy="0.0" ixz="0.0" iyy="0.078" iyz="0.0" izz="1.406"/>
+    </inertial>
+
+
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry>
+        <cylinder radius="0.75" length="0.2"/>
+      </geometry>
+    </collision>
+
+    <gazebo reference="right_wheel_link">
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+    </gazebo>
+
   </link>
 </robot>

@@ -1,0 +1,49 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="turtlebot3_world">
+    <static>true</static>
+
+    <!-- Outer walls and 9 center pillars -->
+    <link name="ros_symbol">
+      <collision name="ros_symbol_collision">
+        <geometry>
+          <mesh>
+            <uri>model://turtlebot3_world/meshes/wall.dae</uri>
+            <scale>15.0 15.0 15.0</scale>
+          </mesh>
+        </geometry>
+      </collision>
+
+      <visual name="ros_symbol_visual">
+        <geometry>
+          <mesh>
+            <uri>model://turtlebot3_world/meshes/wall.dae</uri>
+            <scale>15.0 15.0 15.0</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+
+    <!-- Green outer hexagon markers -->
+    <link name="hexagon">
+      <collision name="hexagon_collision">
+        <geometry>
+          <mesh>
+            <uri>model://turtlebot3_world/meshes/hexagon.dae</uri>
+            <scale>15.0 15.0 15.0</scale>
+          </mesh>
+        </geometry>
+      </collision>
+
+      <visual name="hexagon_visual">
+        <geometry>
+          <mesh>
+            <uri>model://turtlebot3_world/meshes/hexagon.dae</uri>
+            <scale>15.0 15.0 15.0</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+
+  </model>
+</sdf>

@@ -1,0 +1,17 @@
+teleop_twist_keyboard_node:
+  ros__parameters:
+    use_sim_time: true
+
+    # Base speeds (m/s and rad/s)
+    speed: 0.5
+    turn: 1.0
+
+    # Speed step increments/decrements (used by keys 'q','z','w','x','e','c')
+    speed_step: 0.1
+    turn_step: 0.1
+
+    # Publish geometry_msgs/msg/TwistStamped instead of geometry_msgs/msg/Twist
+    stamped: false
+
+    # Frame ID attached to the header when 'stamped' is true
+    frame_id: ''

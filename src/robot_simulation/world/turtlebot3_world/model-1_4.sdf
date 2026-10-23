@@ -1,0 +1,48 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="turtlebot3_world">
+    <static>true</static>
+
+    <!-- Outer Perimeter Wall -->
+    <link name="ros_symbol">
+      <collision name="wall_collision">
+        <geometry>
+          <mesh>
+            <uri>model://turtlebot3_world/meshes/wall.dae</uri>
+            <scale>10.0 10.0 10.0</scale>
+          </mesh>
+        </geometry>
+      </collision>
+
+      <visual name="wall_visual">
+        <geometry>
+          <mesh>
+            <uri>model://turtlebot3_world/meshes/wall.dae</uri>
+            <scale>10.0 10.0 10.0</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+
+    <!-- Center Obstacle Pillars -->
+    <link name="hexagon">
+      <collision name="hexagon_collision">
+        <geometry>
+          <mesh>
+            <uri>model://turtlebot3_world/meshes/hexagon.dae</uri>
+            <scale>10.0 10.0 10.0</scale>
+          </mesh>
+        </geometry>
+      </collision>
+
+      <visual name="hexagon_visual">
+        <geometry>
+          <mesh>
+            <uri>model://turtlebot3_world/meshes/hexagon.dae</uri>
+            <scale>10.0 10.0 10.0</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
