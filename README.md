@@ -1,361 +1,346 @@
-# My Own ROS 2 Launch Files
+# My Own ROS 2 Robot Workspace
 
-A personal ROS 2 launch-file reference and collection for learning, experimenting with, and building robot systems using ROS 2.
+A personal ROS 2 robot workspace containing my robot description, Gazebo simulation, robot control, launch files, controller configuration, joystick control, keyboard teleoperation, and RViz visualization.
 
-This repository contains custom ROS 2 launch files and examples for launching robot nodes, URDF models, RViz, simulation components, parameters, remappings, and other ROS 2 processes.
+This README documents **how my code is actually written and connected**.
 
-The main purpose of this repository is not only to run the robot, but also to serve as a **personal reference for understanding how ROS 2 launch files work**.
+It is intended as a personal reference so that I can come back later and understand:
 
----
+- which package does what
+- which launch file starts which nodes
+- which launch file calls another launch file
+- how my URDF is assembled
+- how my robot description reaches RViz and Gazebo
+- how joystick control works
+- how keyboard control works
+- how `twist_mux` combines the control inputs
+- how Gazebo controllers are started
+- how `/cmd_vel` reaches the differential-drive controller
+- where each configuration file is used
+- what I need to change when modifying the system
 
-# Table of Contents
-
-1. [Project Overview](#1-project-overview)
-2. [ROS 2 Environment](#2-ros-2-environment)
-3. [Repository Structure](#3-repository-structure)
-4. [Understanding a ROS 2 Workspace](#4-understanding-a-ros-2-workspace)
-5. [What Happens When `ros2 launch` Is Used](#5-what-happens-when-ros2-launch-is-used)
-6. [Basic Launch File Structure](#6-basic-launch-file-structure)
-7. [The `generate_launch_description()` Function](#7-the-generate_launch_description-function)
-8. [Launching a ROS 2 Node](#8-launching-a-ros-2-node)
-9. [Understanding the `Node()` Action](#9-understanding-the-node-action)
-10. [Calling Another Launch File](#10-calling-another-launch-file)
-11. [Understanding `IncludeLaunchDescription`](#11-understanding-includelaunchdescription)
-12. [Passing Arguments to Another Launch File](#12-passing-arguments-to-another-launch-file)
-13. [Launch Arguments](#13-launch-arguments)
-14. [LaunchConfiguration](#14-launchconfiguration)
-15. [PathJoinSubstitution](#15-pathjoinsubstitution)
-16. [FindPackageShare](#16-findpackageshare)
-17. [Parameters](#17-parameters)
-18. [ParameterValue](#18-parametervalue)
-19. [Conditions](#19-conditions)
-20. [IfCondition](#20-ifcondition)
-21. [UnlessCondition](#21-unlesscondition)
-22. [TimerAction](#22-timeraction)
-23. [ExecuteProcess](#23-executeprocess)
-24. [ROS 2 URDF Launch Architecture](#24-ros-2-urdf-launch-architecture)
-25. [Robot State Publisher](#25-robot-state-publisher)
-26. [Joint State Publisher](#26-joint-state-publisher)
-27. [RViz](#27-rviz)
-28. [Keyboard Teleoperation](#28-keyboard-teleoperation)
-29. [Launch File Hierarchy](#29-launch-file-hierarchy)
-30. [Python Launch File Template](#30-python-launch-file-template)
-31. [Including Another Launch File Template](#31-including-another-launch-file-template)
-32. [Launching Multiple Nodes](#32-launching-multiple-nodes)
-33. [Build System](#33-build-system)
-34. [CMakeLists.txt](#34-cmakelists.txt)
-35. [package.xml](#35-package.xml)
-36. [Installing Launch Files](#36-installing-launch-files)
-37. [Using `--symlink-install`](#37-using---symlink-install)
-38. [Building the Workspace](#38-building-the-workspace)
-39. [Sourcing the Workspace](#39-sourcing-the-workspace)
-40. [Running Launch Files](#40-running-launch-files)
-41. [Launch Arguments From Terminal](#41-launch-arguments-from-terminal)
-42. [Checking Available Launch Arguments](#42-checking-available-launch-arguments)
-43. [ROS 2 Debugging Commands](#43-ros-2-debugging-commands)
-44. [Node Debugging](#44-node-debugging)
-45. [Topic Debugging](#45-topic-debugging)
-46. [Parameter Debugging](#46-parameter-debugging)
-47. [TF Debugging](#47-tf-debugging)
-48. [RQT Graph](#48-rqt-graph)
-49. [Common Problems](#49-common-problems)
-50. [How to Add a New Launch File](#50-how-to-add-a-new-launch-file)
-51. [How to Add a New Node](#51-how-to-add-a-new-node)
-52. [How to Make One Launch File Start Another](#52-how-to-make-one-launch-file-start-another)
-53. [How to Pass Values Between Launch Files](#53-how-to-pass-values-between-launch-files)
-54. [How to Conditionally Start a Node](#54-how-to-conditionally-start-a-node)
-55. [How to Delay a Node](#55-how-to-delay-a-node)
-56. [How to Run a Normal Linux Command](#56-how-to-run-a-normal-linux-command)
-57. [ROS 2 Launch Cheat Sheet](#57-ros-2-launch-cheat-sheet)
-58. [Recommended Workflow](#58-recommended-workflow)
-59. [Future Expansion](#59-future-expansion)
+This README describes the code **as it currently exists**, including things that are unused, commented out, or could be improved.
 
 ---
 
-# 1. Project Overview
+# 1. Workspace Overview
 
-Repository:
-
-`my-own-ros2-launch-file`
-
-GitHub:
-
-https://github.com/imranlim/my-own-ros2-launch-file
-
-The repository is intended as a personal collection of ROS 2 launch-file examples and working configurations.
-
-The repository focuses on understanding how different ROS 2 components can be started together using a launch system.
-
-Examples include:
-
-- robot description
-- URDF
-- RViz
-- robot state publisher
-- joint state publisher
-- keyboard teleoperation
-- ROS 2 nodes
-- parameters
-- launch arguments
-- topic remapping
-- conditions
-- delayed startup
-- including other launch files
-- starting external processes
-
----
-
-# 2. ROS 2 Environment
-
-The original repository is intended for:
-
-- Ubuntu 22.04 LTS
-- ROS 2 Humble Hawksbill
-- Python launch files
-- `colcon`
-
-The workspace is normally structured like this:
-
-```text
-~/ros2_ws/
-├── src/
-│   └── my-own-ros2-launch-file/
-│
-├── build/
-├── install/
-└── log/
-```
-
----
-
-# 3. Repository Structure
-
-The repository currently contains the following main items:
-
-```text
-my-own-ros2-launch-file/
-│
-├── build/
-├── install/
-├── log/
-├── src/
-│
-├── .gitignore
-└── README.md
-```
-
-## `src/`
-
-This is where ROS 2 packages are normally placed.
-
-The actual ROS 2 source packages should be inside this directory.
-
-For example:
-
-```text
-src/
-├── package_1/
-├── package_2/
-└── package_3/
-```
-
-The `src` directory is the important part when developing the project.
-
----
-
-# 4. Understanding a ROS 2 Workspace
-
-A ROS 2 workspace normally has four important areas.
+My workspace is:
 
 ```text
 ros2_ws/
-│
-├── src/
-├── build/
-├── install/
-└── log/
+└── src/
+    ├── robot_description/
+    ├── robot_simulation/
+    └── robot_control/
 ```
 
-## `src`
-
-Contains the source code.
-
-This is where you edit:
-
-- Python files
-- C++ files
-- launch files
-- URDF
-- configuration files
-- package files
-
----
-
-## `build`
-
-Generated by `colcon`.
-
-It contains intermediate build information.
-
-Normally, you do not edit files here manually.
-
----
-
-## `install`
-
-Contains the installed version of the packages.
-
-When you run:
-
-```bash
-source ~/ros2_ws/install/setup.bash
-```
-
-ROS 2 learns about the packages installed into the workspace.
-
----
-
-## `log`
-
-Contains build and runtime logs.
-
-Useful when debugging.
-
----
-
-# 5. What Happens When `ros2 launch` Is Used
-
-For example:
-
-```bash
-ros2 launch my_package robot.launch.py
-```
-
-The basic flow is:
+The three packages have different responsibilities.
 
 ```text
-Terminal
-   │
-   │ ros2 launch
-   ▼
-ROS 2 Launch System
-   │
-   ▼
-Find Package
-   │
-   ▼
-Find Launch File
-   │
-   ▼
-Read generate_launch_description()
-   │
-   ▼
-Create Launch Actions
-   │
-   ├── Node
-   ├── IncludeLaunchDescription
-   ├── ExecuteProcess
-   ├── TimerAction
-   ├── DeclareLaunchArgument
-   └── Conditions
-   │
-   ▼
-Start Processes
-   │
-   ├── robot_state_publisher
-   ├── joint_state_publisher
-   ├── RViz
-   ├── teleop
-   └── other nodes
+                    ros2_ws
+                       |
+                       +------------------------+
+                       |                        |
+                       v                        v
+              robot_description         robot_simulation
+                       |                        |
+                       |                        |
+                       v                        v
+                 Robot model              Gazebo world
+                 URDF/Xacro               Controllers
+                 RViz                     Simulation
+                       |
+                       |
+                       +------------+
+                                    |
+                                    v
+                              robot_control
+                                    |
+                                    v
+                         Joystick / Keyboard
+                              /cmd_vel
 ```
-
-This is one of the most important concepts in ROS 2.
-
-A launch file does not normally contain the actual implementation of the node.
-
-Instead, the launch file tells ROS 2:
-
-> "Start this executable, from this package, with these parameters."
 
 ---
 
-# 6. Basic Launch File Structure
+# 2. My Three Packages
 
-A Python launch file normally looks like:
+## `robot_description`
+
+This package contains the physical description of my robot.
+
+It contains:
+
+```text
+robot_description/
+├── launch/
+│   └── display.launch.py
+│
+├── urdf/
+│   ├── assy.urdf
+│   ├── body.urdf
+│   ├── wheel_left.urdf
+│   ├── wheel_right.urdf
+│   ├── shaft.urdf
+│   └── caster.urdf
+│
+├── rviz/
+│   └── urdf.rviz
+│
+├── scripts/
+│   └── start_node_red.sh
+│
+├── config/
+├── package.xml
+└── CMakeLists.txt
+```
+
+Its main job is:
+
+```text
+URDF files
+    |
+    v
+assy.urdf
+    |
+    v
+robot_description
+    |
+    +------> robot_state_publisher
+    |
+    +------> Gazebo
+    |
+    +------> RViz
+```
+
+---
+
+# 3. `robot_simulation`
+
+This package contains my Gazebo simulation.
+
+```text
+robot_simulation/
+├── launch/
+│   └── simulation.launch.py
+│
+├── config/
+│   ├── joints.yaml
+│   └── diffdrive.yaml
+│
+├── world/
+│   ├── robot_world.world
+│   └── turtlebot3_world/
+│       ├── model.sdf
+│       ├── model-1_4.sdf
+│       ├── model.config
+│       └── meshes/
+│           ├── wall.dae
+│           └── hexagon.dae
+│
+├── package.xml
+└── CMakeLists.txt
+```
+
+Its job is to provide:
+
+- Gazebo world
+- robot spawning
+- controller spawners
+- diff-drive configuration
+- joint-state configuration
+
+---
+
+# 4. `robot_control`
+
+This package contains my robot control system.
+
+```text
+robot_control/
+├── launch/
+│   └── control.launch.py
+│
+├── config/
+│   ├── joy_config.yaml
+│   ├── teleop_twist.yaml
+│   ├── twist_mux.yaml
+│   └── keyboard_twist.yaml
+│
+├── package.xml
+└── CMakeLists.txt
+```
+
+Its control flow is:
+
+```text
+Joystick
+   |
+   v
+joy_node
+   |
+   v
+/joy
+   |
+   v
+teleop_twist_joy
+   |
+   v
+/joy/cmd_vel
+   |
+   |
+   +--------------------+
+                        |
+Keyboard                |
+   |                    |
+   v                    |
+/key/cmd_vel             |
+   |                    |
+   +---------+----------+
+             |
+             v
+        twist_mux
+             |
+             v
+          /cmd_vel
+             |
+             v
+diff_drive_base_controller
+             |
+             v
+          Wheels
+```
+
+This is the main control architecture in my project.
+
+---
+
+# 5. Complete Launch File Structure
+
+There are three important launch files.
+
+```text
+robot_description
+└── launch/
+    └── display.launch.py
+
+robot_control
+└── launch/
+    └── control.launch.py
+
+robot_simulation
+└── launch/
+    └── simulation.launch.py
+```
+
+The most important relationship is:
+
+```text
+simulation.launch.py
+        |
+        +----------------------------+
+        |                            |
+        v                            v
+display.launch.py             control.launch.py
+        |                            |
+        v                            v
+robot_state_publisher       joy / teleop / keyboard
+RViz                        twist_mux
+        |
+        |
+        +--------------------------+
+                                   |
+                                   v
+                              Gazebo simulation
+```
+
+---
+
+# 6. Main Launch File: `simulation.launch.py`
+
+Location:
+
+```text
+robot_simulation/launch/simulation.launch.py
+```
+
+This is effectively my main simulation launch file.
+
+It starts:
+
+1. `display.launch.py`
+2. `control.launch.py`
+3. `joint_state_broadcaster` spawner
+4. `diff_drive_base_controller` spawner
+5. Gazebo robot spawner
+6. Gazebo itself
+
+---
+
+# 7. Imports in `simulation.launch.py`
+
+My code starts with:
 
 ```python
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess, SetEnvironmentVariable
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.conditions import IfCondition, UnlessCondition
 from launch_ros.actions import Node
-
-
-def generate_launch_description():
-
-    my_node = Node(
-        package='my_package',
-        executable='my_node',
-        output='screen'
-    )
-
-    return LaunchDescription([
-        my_node
-    ])
+from launch_ros.substitutions import FindPackageShare
+from launch_ros.parameter_descriptions import ParameterValue
+from launch.substitutions import Command
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+import os
 ```
 
-There are three important parts.
+Not all of these imports are currently used.
 
-## 1. Import
+## Actually used
+
+My file uses:
 
 ```python
-from launch import LaunchDescription
+LaunchDescription
+DeclareLaunchArgument
+IncludeLaunchDescription
+PathJoinSubstitution
+LaunchConfiguration
+Node
+FindPackageShare
+PythonLaunchDescriptionSource
 ```
 
-Imports the ROS 2 launch description system.
+## Currently unused
+
+These are imported but not currently used in the active code:
+
+```python
+ExecuteProcess
+SetEnvironmentVariable
+IfCondition
+UnlessCondition
+ParameterValue
+Command
+os
+```
+
+I should remember this because if I clean up the file later, these imports can be removed unless I start using them again.
 
 ---
 
-## 2. Create actions
+# 8. Creating the Launch Description
 
-```python
-my_node = Node(...)
-```
-
-Creates an action that tells ROS 2 to start a node.
-
----
-
-## 3. Return the launch description
-
-```python
-return LaunchDescription([
-    my_node
-])
-```
-
-This tells ROS 2 what actions should be executed.
-
----
-
-# 7. The `generate_launch_description()` Function
-
-Every Python launch file normally contains:
+My code does:
 
 ```python
 def generate_launch_description():
+
+    ld = LaunchDescription()
 ```
 
-ROS 2 calls this function when the launch file starts.
-
-Inside this function you define:
-
-- nodes
-- arguments
-- parameters
-- included launch files
-- timers
-- processes
-- conditions
-
-At the end:
+Instead of putting everything directly inside:
 
 ```python
 return LaunchDescription([
@@ -363,1025 +348,2474 @@ return LaunchDescription([
 ])
 ```
 
-The returned `LaunchDescription` contains all the actions ROS 2 should execute.
+I create an `ld` object first.
+
+Then I repeatedly use:
+
+```python
+ld.add_action(...)
+```
+
+to add each action.
+
+My launch structure is therefore:
+
+```text
+generate_launch_description()
+        |
+        v
+ld = LaunchDescription()
+        |
+        +-- add display launch
+        |
+        +-- add control launch
+        |
+        +-- add joint state spawner
+        |
+        +-- add diff drive spawner
+        |
+        +-- add Gazebo robot spawner
+        |
+        +-- add GUI argument
+        |
+        +-- add Gazebo launch
+        |
+        v
+return ld
+```
 
 ---
 
-# 8. Launching a ROS 2 Node
+# 9. `simulation.launch.py` Calls `display.launch.py`
 
-The most important launch action is:
-
-```python
-Node()
-```
-
-Example:
+My code:
 
 ```python
-Node(
-    package='turtlesim',
-    executable='turtlesim_node',
-    output='screen'
-)
+ld.add_action(IncludeLaunchDescription(
+    PathJoinSubstitution([
+        FindPackageShare('robot_description'),
+        'launch',
+        'display.launch.py'
+    ]),
+))
 ```
 
-This means:
+This is one of the most important parts of my project.
+
+My simulation launch file does not recreate the RViz and robot-description setup itself.
+
+Instead it says:
 
 ```text
-Package:
-turtlesim
-
-Executable:
-turtlesim_node
-
-Output:
-terminal
+Find robot_description package
+        |
+        v
+Find launch/
+        |
+        v
+Find display.launch.py
+        |
+        v
+Include it
 ```
 
-Equivalent manual command:
+Therefore:
+
+```text
+simulation.launch.py
+        |
+        v
+robot_description/launch/display.launch.py
+```
+
+---
+
+# 10. `simulation.launch.py` Calls `control.launch.py`
+
+My code:
+
+```python
+ld.add_action(IncludeLaunchDescription(
+    PathJoinSubstitution([
+        FindPackageShare('robot_control'),
+        'launch',
+        'control.launch.py'
+    ]),
+))
+```
+
+This means my simulation launch also starts the entire control system.
+
+The relationship is:
+
+```text
+simulation.launch.py
+        |
+        v
+robot_control
+        |
+        v
+control.launch.py
+```
+
+So I do not need to separately run:
 
 ```bash
-ros2 run turtlesim turtlesim_node
+ros2 launch robot_control control.launch.py
 ```
 
-The launch file simply automates this.
+if I already run my simulation launch.
 
 ---
 
-# 9. Understanding the `Node()` Action
+# 11. My `FindPackageShare`
 
-A typical node:
+I use:
 
 ```python
-Node(
-    package='my_package',
-    executable='my_node',
-    name='my_node_name',
-    namespace='robot1',
+FindPackageShare('robot_description')
+```
+
+to locate the installed `robot_description` package.
+
+Then I construct:
+
+```text
+robot_description
+    |
+    +-- launch
+         |
+         +-- display.launch.py
+```
+
+Likewise:
+
+```python
+FindPackageShare('robot_control')
+```
+
+finds:
+
+```text
+robot_control
+    |
+    +-- launch
+         |
+         +-- control.launch.py
+```
+
+This is how my launch files find each other without hardcoding `/home/...` paths.
+
+---
+
+# 12. Joint State Broadcaster Spawner
+
+My simulation launch starts:
+
+```python
+ld.add_action(Node(
+    package='controller_manager',
+    executable='spawner',
+    arguments=[
+        'joint_state_broadcaster',
+        '--controller-manager-timeout',
+        '30'
+    ],
+    output='screen'
+))
+```
+
+This starts the controller-manager spawner.
+
+It asks the controller manager to start:
+
+```text
+joint_state_broadcaster
+```
+
+I also specifically give it:
+
+```text
+--controller-manager-timeout 30
+```
+
+meaning it can wait up to 30 seconds for the controller manager.
+
+---
+
+# 13. Diff Drive Controller Spawner
+
+My code:
+
+```python
+ld.add_action(Node(
+    package='controller_manager',
+    executable='spawner',
+    arguments=[
+        'diff_drive_base_controller',
+        '--controller-manager-timeout',
+        '30'
+    ],
+    remappings=[
+        (
+            '~/diff_drive_base_controller/cmd_vel_unstamped',
+            '/cmd_vel'
+        )
+    ],
     output='screen',
-    parameters=[...],
-    remappings=[...]
-)
+))
 ```
 
-## `package`
-
-```python
-package='my_package'
-```
-
-Specifies which ROS 2 package contains the executable.
-
----
-
-## `executable`
-
-```python
-executable='my_node'
-```
-
-Specifies the executable that should be launched.
-
----
-
-## `name`
-
-```python
-name='my_node_name'
-```
-
-Changes the runtime node name.
-
----
-
-## `namespace`
-
-```python
-namespace='robot1'
-```
-
-Places the node inside a namespace.
-
-For example:
+This starts:
 
 ```text
-/robot1/my_node
+diff_drive_base_controller
 ```
 
----
-
-## `output`
-
-```python
-output='screen'
-```
-
-Displays the node's output in the terminal.
-
-This is extremely useful when debugging.
-
----
-
-## `parameters`
-
-```python
-parameters=[
-    {
-        'use_sim_time': True
-    }
-]
-```
-
-Passes parameters to the node.
-
----
-
-## `remappings`
-
-Example:
-
-```python
-remappings=[
-    ('cmd_vel', 'robot1/cmd_vel')
-]
-```
-
-Changes topic names.
-
----
-
-# 10. Calling Another Launch File
-
-One of the most important things in this repository is understanding how one launch file can start another launch file.
-
-For example:
+The important part is the remapping:
 
 ```text
-main.launch.py
-       │
-       ├── robot.launch.py
-       │
-       ├── rviz.launch.py
-       │
-       └── teleop.launch.py
+~/diff_drive_base_controller/cmd_vel_unstamped
+                    |
+                    v
+                 /cmd_vel
 ```
 
-Instead of putting everything into one huge launch file, you can separate functionality.
+Therefore my final velocity command topic is:
 
-Example:
+```text
+/cmd_vel
+```
+
+This matches the output from my `twist_mux`.
+
+---
+
+# 14. My Control Chain
+
+The complete control chain is therefore:
+
+```text
+Joystick
+    |
+    v
+/joy
+    |
+    v
+teleop_twist_joy
+    |
+    v
+/joy/cmd_vel
+    |
+    |
+    +-----------------------+
+                            |
+Keyboard                    |
+    |                       |
+    v                       |
+/key/cmd_vel                |
+    |                       |
+    +----------+------------+
+               |
+               v
+           twist_mux
+               |
+               v
+            /cmd_vel
+               |
+               v
+diff_drive_base_controller
+               |
+               v
+         left/right wheels
+```
+
+This is the most important diagram for understanding my robot control.
+
+---
+
+# 15. `world_path` in `simulation.launch.py`
+
+My code creates:
 
 ```python
-IncludeLaunchDescription(
-    PythonLaunchDescriptionSource(
-        ...
+world_path = PathJoinSubstitution([
+    FindPackageShare('robot_simulation'),
+    'world'
+])
+```
+
+So this creates a path pointing to:
+
+```text
+robot_simulation/world
+```
+
+However, my current code does not actually use `world_path` in an active action.
+
+The code that would use it is commented out:
+
+```python
+# ld.add_action(SetEnvironmentVariable(
+#     name='GAZEBO_MODEL_PATH',
+#     value=[world_path, ':', os.environ.get('GAZEBO_MODEL_PATH', '')]
+# ))
+```
+
+Therefore, as my code currently stands:
+
+```text
+world_path
+   |
+   X
+not actively used
+```
+
+---
+
+# 16. Gazebo Robot Spawner
+
+My code:
+
+```python
+ld.add_action(Node(
+    package='gazebo_ros',
+    executable='spawn_entity.py',
+    name='urdf_spawner',
+    arguments=[
+        '-topic', '/robot_description',
+        '-entity', 'robot',
+        '-x', '0.0',
+        '-y', '0.0',
+        '-z', '0.4',
+        '-unpause'
+    ],
+    output='screen',
+))
+```
+
+This is how my robot gets inserted into Gazebo.
+
+The important part is:
+
+```text
+-topic /robot_description
+```
+
+The spawner gets the robot description from:
+
+```text
+/robot_description
+```
+
+which is published/generated by my robot description setup.
+
+I name the Gazebo entity:
+
+```text
+robot
+```
+
+and spawn it at:
+
+```text
+x = 0.0
+y = 0.0
+z = 0.4
+```
+
+I also use:
+
+```text
+-unpause
+```
+
+so the spawned entity is not left in a paused state.
+
+---
+
+# 17. Gazebo GUI Argument
+
+My code declares:
+
+```python
+ld.add_action(
+    DeclareLaunchArgument(
+        name='gui',
+        default_value='true'
     )
 )
 ```
 
-This means:
+Therefore I can control Gazebo GUI with:
 
-> Include and execute another launch file.
-
----
-
-# 11. Understanding `IncludeLaunchDescription`
-
-Import:
-
-```python
-from launch.actions import IncludeLaunchDescription
+```bash
+gui:=true
 ```
 
-This action allows one launch file to include another launch file.
+or:
 
-Example:
-
-```python
-included_launch = IncludeLaunchDescription(
-    PythonLaunchDescriptionSource([
-        ...
-    ])
-)
+```bash
+gui:=false
 ```
 
-Conceptually:
+The default is:
 
 ```text
-main.launch.py
-       │
-       │ IncludeLaunchDescription
-       ▼
-other.launch.py
-       │
-       ├── Node A
-       ├── Node B
-       └── Node C
+true
 ```
-
-The main launch file does not need to duplicate all the code from the other launch file.
-
-This is useful for modular ROS 2 systems.
 
 ---
 
-# 12. Passing Arguments to Another Launch File
+# 18. Gazebo Launch File
 
-You can pass launch arguments into the included launch file.
-
-Example:
+My code includes Gazebo's own launch file:
 
 ```python
 IncludeLaunchDescription(
     PythonLaunchDescriptionSource([
-        launch_file
+        PathJoinSubstitution([
+            FindPackageShare('gazebo_ros'),
+            'launch',
+            'gazebo.launch.py'
+        ])
     ]),
     launch_arguments={
-        'use_sim_time': 'true'
+        'gui': LaunchConfiguration('gui'),
+        'pause': 'false',
+        'world': PathJoinSubstitution([
+            FindPackageShare('robot_simulation'),
+            'world',
+            'robot_world.world'
+        ])
     }.items()
 )
 ```
 
-The parent launch file passes:
+So my code is effectively doing:
 
 ```text
-use_sim_time = true
-```
-
-to the child launch file.
-
-The child launch file can then retrieve it using:
-
-```python
-LaunchConfiguration('use_sim_time')
+Find gazebo_ros
+      |
+      v
+launch/gazebo.launch.py
+      |
+      +-- gui = my gui argument
+      |
+      +-- pause = false
+      |
+      +-- world = robot_world.world
 ```
 
 ---
 
-# 13. Launch Arguments
+# 19. My Gazebo World
 
-Launch arguments allow values to be changed from the terminal without modifying the Python file.
+My world file is:
 
-Example:
-
-```python
-DeclareLaunchArgument(
-    'use_sim_time',
-    default_value='false',
-    description='Use simulation time'
-)
+```text
+robot_simulation/world/robot_world.world
 ```
 
-Then:
+It contains:
 
-```bash
-ros2 launch my_package robot.launch.py use_sim_time:=true
+```text
+ground_plane
+sun
+turtlebot3_world
 ```
 
-This is much better than hardcoding everything.
+It also sets:
+
+```text
+shadows = false
+```
+
+and defines the Gazebo camera.
 
 ---
 
-# 14. LaunchConfiguration
+# 20. My Gazebo Camera
 
-Import:
+My world contains:
 
-```python
-from launch.substitutions import LaunchConfiguration
+```xml
+<camera name='user_camera'>
+    <pose>0.0 -25.0 35.0 0 0.9 1.57</pose>
+    <view_controller>orbit</view_controller>
+    <projection_type>perspective</projection_type>
+</camera>
 ```
 
-Example:
-
-```python
-use_sim_time = LaunchConfiguration('use_sim_time')
-```
-
-This means:
-
-> Get the current value of the launch argument called `use_sim_time`.
-
-Then:
-
-```python
-parameters=[
-    {
-        'use_sim_time': use_sim_time
-    }
-]
-```
-
-passes that value into a node.
+So when Gazebo opens, my initial camera is positioned above and behind the arena to give a larger view.
 
 ---
 
-# 15. PathJoinSubstitution
+# 21. My Gazebo Physics
 
-`PathJoinSubstitution` is useful for constructing file paths.
+My world uses:
 
-Example:
+```xml
+<physics type="ode">
+```
+
+with:
+
+```text
+real_time_update_rate = 1000
+max_step_size = 0.001
+real_time_factor = 1
+```
+
+I also configure the ODE solver.
+
+The important point is that these are my simulation physics settings, not controller settings.
+
+---
+
+# 22. My TurtleBot3 World Model
+
+My world includes:
+
+```xml
+<include>
+    <uri>model://turtlebot3_world</uri>
+    <pose>0 0 0 0 0 0</pose>
+</include>
+```
+
+My own local model is stored at:
+
+```text
+world/turtlebot3_world/
+```
+
+with:
+
+```text
+model.sdf
+model-1_4.sdf
+model.config
+meshes/
+    wall.dae
+    hexagon.dae
+```
+
+---
+
+# 23. My World Meshes
+
+The model uses:
+
+```text
+wall.dae
+hexagon.dae
+```
+
+The SDF defines these meshes as both:
+
+```text
+collision
+```
+
+and:
+
+```text
+visual
+```
+
+This means the same geometry is used for:
+
+- what I see
+- what Gazebo uses for collision
+
+---
+
+# 24. Difference Between My Two Model SDF Files
+
+I have:
+
+```text
+model.sdf
+model-1_4.sdf
+```
+
+`model.sdf` scales the meshes by:
+
+```text
+15.0 15.0 15.0
+```
+
+`model-1_4.sdf` scales them by:
+
+```text
+10.0 10.0 10.0
+```
+
+This means these are two different scaling versions of the same world model.
+
+The active `model.sdf` uses the 15x scale.
+
+---
+
+# 25. `display.launch.py`
+
+Location:
+
+```text
+robot_description/launch/display.launch.py
+```
+
+This launch file is responsible for:
+
+```text
+robot description
+robot_state_publisher
+joint state publisher options
+RViz
+```
+
+It is included by:
+
+```text
+simulation.launch.py
+```
+
+---
+
+# 26. Imports in `display.launch.py`
+
+My file imports:
 
 ```python
-PathJoinSubstitution([
-    FindPackageShare('my_package'),
-    'launch',
-    'robot.launch.py'
-])
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.conditions import IfCondition, UnlessCondition
+from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
+from launch_ros.parameter_descriptions import ParameterValue
+from launch.substitutions import Command
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 ```
+
+The active code mainly uses:
+
+```text
+LaunchDescription
+DeclareLaunchArgument
+LaunchConfiguration
+PathJoinSubstitution
+IfCondition
+Node
+FindPackageShare
+ParameterValue
+Command
+```
+
+Some imports are currently unused:
+
+```text
+IncludeLaunchDescription
+ExecuteProcess
+UnlessCondition
+PythonLaunchDescriptionSource
+```
+
+---
+
+# 27. Creating `ld`
+
+My code:
+
+```python
+ld = LaunchDescription()
+```
+
+Then I add actions using:
+
+```python
+ld.add_action(...)
+```
+
+This is the same structure I use in my other launch files.
+
+---
+
+# 28. My Robot Package Path
+
+My code:
+
+```python
+robot_path = FindPackageShare('robot_description')
+```
+
+This stores the package location.
 
 Conceptually:
 
 ```text
-package share directory
-        +
-launch
-        +
-robot.launch.py
+robot_path
+    |
+    v
+robot_description package
 ```
 
-becomes:
+I then reuse this variable when constructing the paths.
+
+---
+
+# 29. My URDF Model Path
+
+My code:
+
+```python
+model_path = PathJoinSubstitution([
+    'urdf',
+    'assy.urdf'
+])
+```
+
+This creates:
 
 ```text
-/path/to/package/share/my_package/launch/robot.launch.py
+urdf/assy.urdf
 ```
 
-This is useful because you do not need to hardcode the absolute path.
+Then:
+
+```python
+urdf_path = PathJoinSubstitution([
+    robot_path,
+    model_path
+])
+```
+
+combines the package path and model path.
+
+The final result is effectively:
+
+```text
+<robot_description package>/urdf/assy.urdf
+```
 
 ---
 
-# 16. FindPackageShare
+# 30. My RViz Configuration Path
 
-Import:
-
-```python
-from launch_ros.substitutions import FindPackageShare
-```
-
-Example:
+My code:
 
 ```python
-FindPackageShare('my_package')
+rviz_config = PathJoinSubstitution([
+    robot_path,
+    'rviz',
+    'urdf.rviz'
+])
 ```
 
-This asks ROS 2:
+Therefore my RViz configuration is:
 
-> Where is the installed share directory of this package?
-
-This is especially useful when locating:
-
-- URDF
-- RViz configurations
-- launch files
-- YAML files
-- meshes
-- other resources
+```text
+robot_description/
+└── rviz/
+    └── urdf.rviz
+```
 
 ---
 
-# 17. Parameters
+# 31. My Robot Description Generation
 
-ROS 2 nodes can receive parameters.
-
-Example:
+This is one of the most important parts of my code:
 
 ```python
-Node(
-    package='my_package',
-    executable='my_node',
+robot_description_content = ParameterValue(
+    Command(['xacro ', urdf_path]),
+    value_type=str
+)
+```
+
+My code does not simply read the URDF file as a plain parameter.
+
+It executes:
+
+```text
+xacro
+  |
+  v
+assy.urdf
+  |
+  v
+robot description string
+```
+
+Even though my file is named `.urdf`, I am using Xacro processing because `assy.urdf` contains:
+
+```xml
+<xacro:include>
+```
+
+---
+
+# 32. My Robot State Publisher
+
+I create:
+
+```python
+robot_state_publisher_node = Node(
+    package='robot_state_publisher',
+    executable='robot_state_publisher',
     parameters=[
         {
-            'use_sim_time': False
+            'robot_description': robot_description_content,
+            'use_sim_time': True,
         }
     ]
 )
 ```
 
-The node receives:
+Therefore:
 
 ```text
-use_sim_time = false
+assy.urdf
+   |
+   v
+xacro Command
+   |
+   v
+robot_description
+   |
+   v
+robot_state_publisher
 ```
 
-Parameters are different from topics.
+I explicitly set:
 
-A topic continuously communicates data.
+```text
+use_sim_time = true
+```
 
-A parameter stores configuration for a node.
+because my robot is being used with simulation time.
 
 ---
 
-# 18. ParameterValue
+# 33. My `jsp_gui` Argument
 
-`ParameterValue` can be useful when a substitution needs to be explicitly interpreted as a certain type.
-
-For example:
+I declare:
 
 ```python
-ParameterValue(
-    some_value,
-    value_type=str
+DeclareLaunchArgument(
+    name='jsp_gui',
+    default_value='false',
+    choices=['true', 'false'],
+    description='Flag to enable joint_state_publisher_gui'
 )
 ```
 
-This can prevent type interpretation problems.
+So I intended this argument to control whether the GUI version is used.
 
-This becomes particularly useful when launch substitutions are involved.
+I can pass:
 
----
-
-# 19. Conditions
-
-ROS 2 launch files can conditionally start actions.
-
-For example:
-
-```text
-if true
-    start RViz
-
-if false
-    do not start RViz
+```bash
+jsp_gui:=true
 ```
 
-Conditions are useful for making one launch file configurable.
+or:
+
+```bash
+jsp_gui:=false
+```
 
 ---
 
-# 20. IfCondition
+# 34. My `jsp` Argument
 
-Import:
+I also declare:
 
 ```python
-from launch.conditions import IfCondition
+DeclareLaunchArgument(
+    name='jsp',
+    default_value='false',
+    choices=['true', 'false'],
+    description='Flag to enable joint_state_publisher'
+)
 ```
 
-Example:
+However, in the current code, I never use:
+
+```python
+LaunchConfiguration('jsp')
+```
+
+for the normal `joint_state_publisher`.
+
+Therefore:
+
+```text
+jsp argument
+    |
+    X
+currently not connected to a Node condition
+```
+
+This is important to remember when modifying the file.
+
+---
+
+# 35. My `rviz_config` Argument
+
+I declare:
+
+```python
+DeclareLaunchArgument(
+    name='rviz_config',
+    default_value=rviz_config,
+    description='path rviz_config kek mano'
+)
+```
+
+Therefore the default RViz file is:
+
+```text
+robot_description/rviz/urdf.rviz
+```
+
+But I can override it from the command line.
+
+---
+
+# 36. My Joint State Publisher Conditions
+
+My code currently contains:
+
+```python
+Node(
+    package='joint_state_publisher',
+    executable='joint_state_publisher',
+    condition=IfCondition(
+        LaunchConfiguration('jsp_gui')
+    )
+)
+```
+
+and:
+
+```python
+Node(
+    package='joint_state_publisher_gui',
+    executable='joint_state_publisher_gui',
+    condition=IfCondition(
+        LaunchConfiguration('jsp_gui')
+    )
+)
+```
+
+Notice something important:
+
+**Both nodes use `jsp_gui`.**
+
+Therefore the current behavior is:
+
+```text
+jsp_gui=false
+     |
+     +--> joint_state_publisher        NOT STARTED
+     |
+     +--> joint_state_publisher_gui    NOT STARTED
+```
+
+When:
+
+```text
+jsp_gui=true
+```
+
+the current behavior becomes:
+
+```text
+jsp_gui=true
+     |
+     +--> joint_state_publisher        STARTED
+     |
+     +--> joint_state_publisher_gui    STARTED
+```
+
+So the code currently does **not** implement the comment:
+
+> "either launch joint_state_publisher or joint_state_publisher_gui"
+
+It actually makes both conditions depend on the same flag.
+
+That is worth keeping in this README because this is what the code actually does.
+
+---
+
+# 37. My RViz Node
+
+My code:
 
 ```python
 Node(
     package='rviz2',
     executable='rviz2',
-    condition=IfCondition(use_rviz)
+    output='screen',
+    arguments=[
+        '-d',
+        LaunchConfiguration('rviz_config')
+    ],
+    parameters=[
+        {
+            'use_sim_time': True
+        }
+    ],
 )
 ```
 
-If:
+This starts RViz and gives it my selected configuration file.
+
+The important relationship is:
 
 ```text
-use_rviz = true
-```
-
-RViz starts.
-
-If:
-
-```text
-use_rviz = false
-```
-
-RViz does not start.
-
----
-
-# 21. UnlessCondition
-
-`UnlessCondition` is basically the opposite.
-
-Example:
-
-```python
-condition=UnlessCondition(use_sim)
-```
-
-The action runs when the condition is false.
-
-Conceptually:
-
-```text
-IfCondition:
-    run when TRUE
-
-UnlessCondition:
-    run when FALSE
+rviz_config argument
+        |
+        v
+LaunchConfiguration('rviz_config')
+        |
+        v
+RViz
+        |
+        v
+urdf.rviz
 ```
 
 ---
 
-# 22. TimerAction
+# 38. My Robot Assembly: `assy.urdf`
 
-Import:
+This is the main robot description file.
 
-```python
-from launch.actions import TimerAction
+Location:
+
+```text
+robot_description/urdf/assy.urdf
 ```
 
-Example:
+It includes:
+
+```text
+wheel_right.urdf
+wheel_left.urdf
+body.urdf
+shaft.urdf
+caster.urdf
+```
+
+Therefore:
+
+```text
+assy.urdf
+   |
+   +-- wheel_right
+   +-- wheel_left
+   +-- body
+   +-- shaft
+   +-- caster
+```
+
+---
+
+# 39. My Xacro Includes
+
+My code:
+
+```xml
+<xacro:include filename="$(find robot_description)/urdf/wheel_right.urdf" />
+<xacro:include filename="$(find robot_description)/urdf/wheel_left.urdf" />
+<xacro:include filename="$(find robot_description)/urdf/body.urdf" />
+<xacro:include filename="$(find robot_description)/urdf/shaft.urdf" />
+<xacro:include filename="$(find robot_description)/urdf/caster.urdf" />
+```
+
+Therefore `assy.urdf` acts as the assembly file.
+
+It combines my separate robot parts into one robot.
+
+---
+
+# 40. My Robot Links
+
+The resulting robot contains:
+
+```text
+base_link
+left_wheel_link
+right_wheel_link
+shaft_link
+caster_link
+```
+
+The main relationship is:
+
+```text
+base_link
+├── left_wheel_link
+├── right_wheel_link
+└── shaft_link
+      └── caster_link
+```
+
+---
+
+# 41. My Right Wheel Joint
+
+My code:
+
+```xml
+<joint name="base_to_right_wheel" type="continuous">
+    <parent link="base_link"/>
+    <child link="right_wheel_link"/>
+    <origin xyz="-1.3 -1.1 0.0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+</joint>
+```
+
+This connects:
+
+```text
+base_link
+    |
+    v
+right_wheel_link
+```
+
+The joint is:
+
+```text
+continuous
+```
+
+so the wheel can continuously rotate.
+
+Its rotation axis is:
+
+```text
+0 1 0
+```
+
+---
+
+# 42. My Left Wheel Joint
+
+My code:
+
+```xml
+<joint name="base_to_left_wheel" type="continuous">
+    <parent link="base_link"/>
+    <child link="left_wheel_link"/>
+    <origin xyz="-1.3 1.1 0.0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+</joint>
+```
+
+This connects:
+
+```text
+base_link
+    |
+    v
+left_wheel_link
+```
+
+The left and right wheels therefore use the same rotation axis but are placed on opposite sides.
+
+---
+
+# 43. My Shaft
+
+My code:
+
+```xml
+<joint name="base_to_shaft" type="fixed">
+    <parent link="base_link"/>
+    <child link="shaft_link"/>
+    <origin xyz="1.3 0 -0.35" rpy="0 0 0"/>
+</joint>
+```
+
+This means:
+
+```text
+base_link
+    |
+    v
+shaft_link
+```
+
+The shaft cannot rotate relative to the base because I use:
+
+```text
+type="fixed"
+```
+
+---
+
+# 44. My Caster
+
+My code:
+
+```xml
+<joint name="shaft_to_caster" type="fixed">
+    <parent link="shaft_link"/>
+    <child link="caster_link"/>
+    <origin xyz="-0.07 0 -0.15" rpy="0 0 0"/>
+</joint>
+```
+
+Therefore:
+
+```text
+base_link
+    |
+    v
+shaft_link
+    |
+    v
+caster_link
+```
+
+Again, the connection is fixed.
+
+---
+
+# 45. My Base Body
+
+`body.urdf` defines:
+
+```xml
+<link name="base_link">
+```
+
+The body is a box:
+
+```text
+size = 4 2 0.5
+```
+
+Therefore my robot base is:
+
+```text
+length = 4
+width  = 2
+height = 0.5
+```
+
+The mass is:
+
+```text
+5.0
+```
+
+I also provide inertia values.
+
+The same box geometry is used for:
+
+```text
+visual
+collision
+```
+
+---
+
+# 46. My Wheels
+
+Both wheels use:
+
+```text
+cylinder
+radius = 0.75
+length = 0.2
+```
+
+They are rotated using:
+
+```text
+rpy = 1.5708 0 0
+```
+
+Each wheel has:
+
+```text
+visual
+inertial
+collision
+```
+
+---
+
+# 47. Wheel Friction
+
+My wheel files contain:
+
+```xml
+<gazebo reference="left_wheel_link">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+</gazebo>
+```
+
+and similarly for the right wheel.
+
+Therefore I give both wheels:
+
+```text
+mu1 = 1.0
+mu2 = 1.0
+```
+
+This affects their Gazebo contact friction.
+
+---
+
+# 48. My Shaft
+
+`shaft.urdf` creates:
+
+```xml
+<link name="shaft_link">
+```
+
+with a cylinder:
+
+```text
+radius = 0.1
+length = 0.25
+```
+
+Unlike the body and wheels, I do not define inertial or collision information for this shaft in the current file.
+
+---
+
+# 49. My Caster
+
+The caster is:
+
+```text
+radius = 0.15
+length = 0.1
+mass = 0.5
+```
+
+It has:
+
+```text
+visual
+collision
+inertial
+```
+
+I also configure very low friction:
+
+```xml
+<mu1 value="0.001"/>
+<mu2 value="0.001"/>
+```
+
+This makes the caster behave much more freely in Gazebo.
+
+---
+
+# 50. My `ros2_control` Configuration
+
+Inside `assy.urdf`, I add:
+
+```xml
+<ros2_control name="GazeboSystem" type="system">
+```
+
+The hardware plugin is:
+
+```xml
+<plugin>gazebo_ros2_control/GazeboSystem</plugin>
+```
+
+So my simulated hardware interface is:
+
+```text
+Gazebo
+   |
+   v
+gazebo_ros2_control
+   |
+   v
+ros2_control
+```
+
+---
+
+# 51. My Wheel Command Interfaces
+
+For each wheel I define:
+
+```xml
+<command_interface name="velocity">
+```
+
+with:
+
+```text
+min = -10
+max = 10
+```
+
+So my wheel velocity command interface allows:
+
+```text
+-10 <= velocity <= 10
+```
+
+I also define:
+
+```xml
+<state_interface name="position"/>
+<state_interface name="velocity"/>
+```
+
+Therefore each wheel provides position and velocity states.
+
+---
+
+# 52. My Gazebo ROS 2 Control Plugin
+
+My URDF contains:
+
+```xml
+<gazebo>
+    <plugin
+        filename="libgazebo_ros2_control.so"
+        name="gazebo_ros2_control">
+```
+
+This connects my Gazebo robot to ROS 2 Control.
+
+I give it:
+
+```xml
+<parameters>
+    $(find robot_simulation)/config/diffdrive.yaml
+</parameters>
+```
+
+Therefore the controller configuration comes from:
+
+```text
+robot_simulation/config/diffdrive.yaml
+```
+
+---
+
+# 53. My Diff Drive Configuration
+
+The important part is:
+
+```yaml
+diff_drive_base_controller:
+  ros__parameters:
+```
+
+My controller uses:
+
+```text
+left wheel:
+base_to_left_wheel
+
+right wheel:
+base_to_right_wheel
+```
+
+These names exactly match my URDF joint names.
+
+This is important.
+
+```text
+URDF
+base_to_left_wheel
+       |
+       v
+diffdrive.yaml
+left_wheel_names
+
+URDF
+base_to_right_wheel
+       |
+       v
+diffdrive.yaml
+right_wheel_names
+```
+
+---
+
+# 54. My Wheel Dimensions in `diffdrive.yaml`
+
+I configure:
+
+```yaml
+wheel_separation: 2.00
+wheel_radius: 0.75
+```
+
+The radius matches the wheel geometry:
+
+```text
+wheel radius = 0.75
+```
+
+---
+
+# 55. My Base Frame
+
+My diff-drive controller uses:
+
+```yaml
+base_frame_id: base_link
+```
+
+This matches my URDF:
+
+```xml
+<link name="base_link">
+```
+
+Therefore:
+
+```text
+URDF base_link
+       |
+       v
+diff-drive base_frame_id
+```
+
+---
+
+# 56. My Velocity Limits
+
+My linear velocity limits are:
+
+```text
+maximum = 2.0 m/s
+minimum = -2.0 m/s
+```
+
+My linear acceleration limit is:
+
+```text
+0.5 m/s²
+```
+
+Angular velocity:
+
+```text
+maximum = 2.0 rad/s
+minimum = -2.0 rad/s
+```
+
+Angular acceleration:
+
+```text
+0.5 rad/s²
+```
+
+---
+
+# 57. `robot_control/launch/control.launch.py`
+
+This launch file is responsible for all my manual control inputs.
+
+The main components are:
+
+```text
+joy_node
+teleop_twist_joy
+teleop_twist_keyboard
+twist_mux
+```
+
+---
+
+# 58. My Control Configuration Paths
+
+I create:
 
 ```python
-TimerAction(
-    period=3.0,
-    actions=[
-        my_node
+controller_config = PathJoinSubstitution([
+    FindPackageShare('robot_control'),
+    'config',
+    'teleop_twist.yaml'
+])
+```
+
+This points to:
+
+```text
+robot_control/config/teleop_twist.yaml
+```
+
+I also create:
+
+```python
+joy_config
+```
+
+for:
+
+```text
+joy_config.yaml
+```
+
+and:
+
+```python
+keyboard_twist
+```
+
+for:
+
+```text
+keyboard_twist.yaml
+```
+
+and:
+
+```python
+twist_mux_path
+```
+
+for:
+
+```text
+twist_mux.yaml
+```
+
+So my launch file collects all the control configuration paths at the beginning.
+
+---
+
+# 59. My Joystick Driver
+
+My code:
+
+```python
+Node(
+    package='joy',
+    executable='joy_node',
+    name='joy_node',
+    output='log',
+    parameters=[
+        joy_config,
+        {'use_sim_time': True}
     ]
 )
 ```
 
-This means:
+This starts:
 
 ```text
-Start launch
-    │
-    │ wait 3 seconds
-    ▼
-Start my_node
+joy_node
 ```
 
-This can be useful when one process needs time to initialize before another starts.
+The purpose is to read the physical joystick/controller.
+
+The control flow starts as:
+
+```text
+Physical controller
+       |
+       v
+joy_node
+       |
+       v
+/joy
+```
 
 ---
 
-# 23. ExecuteProcess
+# 60. My Joystick Configuration
 
-`ExecuteProcess` allows a launch file to start a normal external process.
+My `joy_config.yaml` sets:
 
-Example:
-
-```python
-ExecuteProcess(
-    cmd=['some_command'],
-    output='screen'
-)
+```yaml
+device_id: 0
+device_name: ""
+deadzone: 0.01
+autorepeat_rate: 20.0
+sticky_buttons: False
 ```
 
-This is different from `Node()`.
+Important values:
 
-### `Node()`
+```text
+device ID = 0
+deadzone = 0.01
+autorepeat = 20 Hz
+```
 
-Used for ROS 2 nodes.
+So my joystick has a very small deadzone of 1%.
+
+---
+
+# 61. My Joystick Teleop
+
+My code:
 
 ```python
 Node(
-    package='my_package',
-    executable='my_node'
+    package='teleop_twist_joy',
+    executable='teleop_node',
+    name='teleop_twist_joy_node',
+    output='log',
+    parameters=[
+        controller_config,
+        {'use_sim_time': True}
+    ],
+    remappings=[
+        ('/cmd_vel', '/joy/cmd_vel')
+    ]
 )
 ```
 
-### `ExecuteProcess()`
+This converts joystick input into velocity commands.
 
-Used for external commands/processes.
-
-```python
-ExecuteProcess(
-    cmd=['python3', 'some_script.py']
-)
-```
-
-A useful way to remember it:
+The important part is my remapping:
 
 ```text
-ROS executable
-    ↓
-Node()
-
-Normal command/program
-    ↓
-ExecuteProcess()
+teleop_twist_joy output
+        |
+        v
+/joy/cmd_vel
 ```
 
----
-
-# 24. ROS 2 URDF Launch Architecture
-
-A common robot visualization setup is:
+Instead of publishing directly to:
 
 ```text
-                Launch File
-                     │
-          ┌──────────┼──────────┐
-          │          │          │
-          ▼          ▼          ▼
-       URDF      Joint State   RViz
-                    Publisher
-          │          │
-          ▼          ▼
-              Robot State
-               Publisher
-                    │
-                    ▼
-                    TF
-                    │
-                    ▼
-                   RViz
-```
-
-The purpose of the launch file is to start all the components together.
-
----
-
-# 25. Robot State Publisher
-
-`robot_state_publisher` reads the robot description and publishes TF transforms for the robot's links.
-
-Conceptually:
-
-```text
-URDF
- │
- ▼
-robot_state_publisher
- │
- ▼
-TF
- │
- ├── base_link
- ├── link1
- ├── link2
- └── ...
-```
-
-RViz uses these transforms to know where each robot link should be displayed.
-
----
-
-# 26. Joint State Publisher
-
-`joint_state_publisher` provides joint states for joints that are not being controlled by actual hardware.
-
-This is particularly useful when visualizing a URDF in RViz.
-
-Conceptually:
-
-```text
-Joint State Publisher
-          │
-          ▼
-     Joint States
-          │
-          ▼
-Robot State Publisher
-          │
-          ▼
-          TF
-```
-
-If real hardware is used, joint states may instead come from:
-
-```text
-encoder
-   ↓
-hardware driver
-   ↓
-/joint_states
-```
-
----
-
-# 27. RViz
-
-RViz is the visualization tool.
-
-Typical flow:
-
-```text
-URDF
- │
- ▼
-Robot State Publisher
- │
- ▼
-TF
- │
- ▼
-RViz
-```
-
-RViz does not normally calculate the robot's physical movement itself.
-
-It displays information published by ROS 2.
-
----
-
-# 28. Keyboard Teleoperation
-
-Keyboard teleoperation is normally another ROS 2 node/process.
-
-For example:
-
-```text
-Keyboard
-   │
-   ▼
-Teleop Node
-   │
-   ▼
 /cmd_vel
-   │
-   ▼
-Robot Controller
-   │
-   ▼
-Motors
 ```
 
-If using a launch file, the teleoperation node can be started together with the rest of the robot system.
+I send it to:
 
-For example:
+```text
+/joy/cmd_vel
+```
+
+because I want `twist_mux` to combine it with keyboard control.
+
+---
+
+# 62. My Joystick Button Configuration
+
+My `teleop_twist.yaml` says:
+
+```yaml
+enable_button: 4
+enable_turbo_button: 5
+```
+
+According to my comments:
+
+```text
+button 4 = L1
+button 5 = R1
+```
+
+Normal speed is:
+
+```text
+0.5
+```
+
+Turbo speed:
+
+```text
+1.0
+```
+
+Angular turbo scale:
+
+```text
+2.0
+```
+
+---
+
+# 63. My Joystick Axis Configuration
+
+My linear axis is:
+
+```yaml
+axis_linear:
+  x: 1
+  y: 0
+  z: -1
+```
+
+My angular axis is:
+
+```yaml
+axis_angular:
+  yaw: 3
+  pitch: 2
+  roll: -1
+```
+
+So my controller mapping is explicitly defined by these axis numbers.
+
+---
+
+# 64. My Keyboard Teleop
+
+My keyboard control is different from the joystick.
+
+I do not launch it immediately.
+
+I use:
+
+```python
+TimerAction(
+    period=5.0,
+```
+
+Therefore:
+
+```text
+control.launch.py starts
+        |
+        v
+wait 5 seconds
+        |
+        v
+keyboard teleop starts
+```
+
+This 5-second delay is an intentional part of my current code.
+
+---
+
+# 65. My Keyboard Process
+
+My code uses:
+
+```python
+ExecuteProcess(
+    cmd=[
+        'bash',
+        '-c',
+        'exec ros2 run teleop_twist_keyboard teleop_twist_keyboard ...'
+    ]
+)
+```
+
+So unlike the joystick node, I launch keyboard teleop through:
+
+```text
+ExecuteProcess
+    |
+    v
+bash
+    |
+    v
+ros2 run teleop_twist_keyboard
+```
+
+---
+
+# 66. My Keyboard Remapping
+
+My command contains:
+
+```text
+--remap /cmd_vel:=/key/cmd_vel
+```
+
+Therefore:
+
+```text
+keyboard teleop
+       |
+       v
+/key/cmd_vel
+```
+
+Again, I intentionally do not send keyboard commands directly to `/cmd_vel`.
+
+---
+
+# 67. My Keyboard Terminal
+
+My command contains:
+
+```text
+< /dev/tty
+```
+
+and:
+
+```python
+emulate_tty=True
+```
+
+This is part of how I make the keyboard teleop interact with the terminal input/output when launched through the launch system.
+
+---
+
+# 68. My Keyboard Configuration
+
+My `keyboard_twist.yaml` sets:
+
+```yaml
+speed: 0.5
+turn: 1.0
+speed_step: 0.1
+turn_step: 0.1
+stamped: false
+```
+
+So my keyboard teleoperation starts with:
+
+```text
+speed = 0.5 m/s
+turn = 1.0 rad/s
+```
+
+and uses:
+
+```text
+speed step = 0.1
+turn step = 0.1
+```
+
+---
+
+# 69. My Twist Mux
+
+My launch file starts:
 
 ```python
 Node(
-    package='teleop_twist_keyboard',
-    executable='teleop_twist_keyboard',
-    output='screen'
+    package='twist_mux',
+    executable='twist_mux',
+    name='twist_mux_node',
+    output='log',
+    parameters=[
+        twist_mux_path,
+        {'use_sim_time': True},
+    ],
+    remappings=[
+        ('/cmd_vel_out', '/cmd_vel')
+    ]
 )
 ```
 
-The exact executable depends on the installed package.
+This is the central point where my manual control inputs are combined.
 
 ---
 
-# 29. Launch File Hierarchy
+# 70. My Twist Mux Inputs
 
-A large ROS 2 system should ideally be divided into smaller launch files.
-
-For example:
+My `twist_mux.yaml` defines:
 
 ```text
-main.launch.py
-│
-├── robot_description.launch.py
-│
-├── sensors.launch.py
-│
-├── controller.launch.py
-│
-├── teleop.launch.py
-│
-└── rviz.launch.py
+joystick
+    /joy/cmd_vel
+    priority 100
+
+rqt
+    /rqt/cmd_vel
+    priority 100
+
+keyboard
+    /key/cmd_vel
+    priority 90
 ```
 
-Then:
+So my mux accepts:
 
 ```text
-main.launch.py
-      │
-      ├── Include robot_description.launch.py
-      ├── Include sensors.launch.py
-      ├── Include controller.launch.py
-      ├── Include teleop.launch.py
-      └── Include rviz.launch.py
-```
-
-This is much easier to maintain than putting everything inside one file.
-
----
-
-# 30. Python Launch File Template
-
-Basic template:
-
-```python
-from launch import LaunchDescription
-from launch_ros.actions import Node
-
-
-def generate_launch_description():
-
-    node = Node(
-        package='my_package',
-        executable='my_node',
-        output='screen'
-    )
-
-    return LaunchDescription([
-        node
-    ])
+/joy/cmd_vel
+/rqt/cmd_vel
+/key/cmd_vel
 ```
 
 ---
 
-# 31. Including Another Launch File Template
+# 71. My Twist Mux Priorities
 
-Basic pattern:
-
-```python
-import os
-
-from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from ament_index_python.packages import get_package_share_directory
-
-
-def generate_launch_description():
-
-    other_launch_file = os.path.join(
-        get_package_share_directory('other_package'),
-        'launch',
-        'other.launch.py'
-    )
-
-    included_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            other_launch_file
-        )
-    )
-
-    return LaunchDescription([
-        included_launch
-    ])
-```
-
-The important idea is:
+My current priorities are:
 
 ```text
-Find package
-    ↓
-Find launch directory
-    ↓
-Find launch file
-    ↓
-Include launch file
+joystick = 100
+rqt      = 100
+keyboard = 90
 ```
 
----
+Therefore joystick and RQT have higher priority than keyboard.
 
-# 32. Launching Multiple Nodes
-
-A launch file can start multiple nodes.
-
-Example:
-
-```python
-node1 = Node(
-    package='package_a',
-    executable='node_a',
-    output='screen'
-)
-
-node2 = Node(
-    package='package_b',
-    executable='node_b',
-    output='screen'
-)
-
-node3 = Node(
-    package='package_c',
-    executable='node_c',
-    output='screen'
-)
-
-return LaunchDescription([
-    node1,
-    node2,
-    node3
-])
-```
-
-Conceptually:
+The timeout is:
 
 ```text
-                 launch
-                   │
-        ┌──────────┼──────────┐
-        ▼          ▼          ▼
-      Node 1     Node 2     Node 3
+0.5 seconds
+```
+
+for each configured input.
+
+---
+
+# 72. My Twist Mux Output
+
+I remap:
+
+```text
+/cmd_vel_out
+```
+
+to:
+
+```text
+/cmd_vel
+```
+
+Therefore:
+
+```text
+                    /joy/cmd_vel
+                         |
+                         v
+                    +---------+
+/key/cmd_vel ------>|         |
+                    |twist_mux|----> /cmd_vel
+/rqt/cmd_vel ------>|         |
+                    +---------+
+```
+
+This `/cmd_vel` is then used by my diff-drive controller.
+
+---
+
+# 73. Complete Control System
+
+My complete actual control system is:
+
+```text
+                   JOYSTICK
+                      |
+                      v
+                   joy_node
+                      |
+                      v
+                     /joy
+                      |
+                      v
+               teleop_twist_joy
+                      |
+                      v
+                /joy/cmd_vel
+                      |
+                      |
+                      +------------------+
+                                         |
+                                         v
+KEYBOARD ---> teleop_twist_keyboard --> /key/cmd_vel
+                                         |
+                                         |
+RQT --------------------------------> /rqt/cmd_vel
+                                         |
+                                         v
+                                    twist_mux
+                                         |
+                                         v
+                                      /cmd_vel
+                                         |
+                                         v
+                             diff_drive_base_controller
+                                         |
+                                         v
+                              base_to_left_wheel
+                              base_to_right_wheel
+```
+
+This is the main diagram to remember.
+
+---
+
+# 74. My `diffdrive.yaml`
+
+The controller manager section:
+
+```yaml
+controller_manager:
+  ros__parameters:
+    update_rate: 100
+    use_sim_time: true
+```
+
+means my controller manager is configured for:
+
+```text
+update rate = 100 Hz
+simulation time = true
 ```
 
 ---
 
-# 33. Build System
+# 75. My Joint State Broadcaster Configuration
 
-The normal workflow is:
+I define:
 
-```bash
-cd ~/ros2_ws
-colcon build
+```yaml
+joint_state_broadcaster:
+  type: joint_state_broadcaster/JointStateBroadcaster
 ```
 
-For this repository, the recommended development command is:
-
-```bash
-colcon build --symlink-install
-```
+This is the controller that publishes joint state information.
 
 ---
 
-# 34. CMakeLists.txt
+# 76. My Diff Drive Controller
 
-For a C++ package, `CMakeLists.txt` controls how the package is built and installed.
+I define:
 
-A launch directory should be installed so ROS 2 can find the launch files after building.
+```yaml
+diff_drive_base_controller:
+  type: diff_drive_controller/DiffDriveController
+```
 
-Example:
+This is the controller responsible for translating:
+
+```text
+/cmd_vel
+```
+
+into wheel commands.
+
+---
+
+# 77. My `joints.yaml`
+
+I also have:
+
+```text
+robot_simulation/config/joints.yaml
+```
+
+It contains:
+
+```yaml
+controller_manager:
+  ros__parameters:
+    update_rate: 100
+    use_sim_time: true
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+```
+
+This is a simpler controller-manager configuration containing only the joint-state broadcaster.
+
+Currently, my active `simulation.launch.py` does not directly load this YAML file.
+
+My active Gazebo plugin uses:
+
+```text
+diffdrive.yaml
+```
+
+instead.
+
+---
+
+# 78. My `robot_description/CMakeLists.txt`
+
+My package uses:
 
 ```cmake
-install(
-  DIRECTORY
-    launch
-    config
-  DESTINATION share/${PROJECT_NAME}/
-)
+find_package(ament_cmake REQUIRED)
 ```
 
-This means:
-
-```text
-launch/
-config/
-   ↓
-install/
-   ↓
-share/<package_name>/
-```
-
-Without installing the files correctly, ROS 2 may not be able to find them.
-
----
-
-# 35. package.xml
-
-`package.xml` describes the ROS 2 package and its dependencies.
-
-For launch functionality, dependencies can include:
-
-```xml
-<exec_depend>ros2launch</exec_depend>
-```
-
-Other dependencies depend on what the package actually uses.
-
-For example:
+Then installs:
 
 ```text
 launch
-launch_ros
-robot_state_publisher
-joint_state_publisher
-rviz2
-xacro
+urdf
+config
+rviz
+scripts
 ```
 
-Only add dependencies that are actually required.
-
----
-
-# 36. Installing Launch Files
-
-Launch files must be installed into the package's share directory.
-
-For CMake packages:
+using:
 
 ```cmake
-install(
-  DIRECTORY launch
+install(DIRECTORY
+  launch
+  urdf
+  config
+  rviz
+  scripts
   DESTINATION share/${PROJECT_NAME}
 )
 ```
 
-For Python packages, launch files are normally included through `data_files`.
-
-Example:
+This is important because my launch files later use:
 
 ```python
-data_files=[
-    (
-        'share/ament_index/resource_index/packages',
-        ['resource/' + package_name]
-    ),
-
-    (
-        'share/' + package_name,
-        ['package.xml']
-    ),
-
-    (
-        os.path.join('share', package_name, 'launch'),
-        glob(os.path.join('launch', '*launch.[pxy][yma]*'))
-    ),
-]
+FindPackageShare(...)
 ```
+
+to find these installed files.
 
 ---
 
-# 37. Using `--symlink-install`
+# 79. My Node-RED Script Installation
 
-Use:
+My `robot_description` package also installs:
+
+```text
+scripts/start_node_red.sh
+```
+
+using:
+
+```cmake
+install(
+  PROGRAMS
+    scripts/start_node_red.sh
+  DESTINATION lib/${PROJECT_NAME}
+)
+```
+
+So ROS 2 installs the script as an executable belonging to the package.
+
+---
+
+# 80. My `start_node_red.sh`
+
+The script begins with:
 
 ```bash
-colcon build --symlink-install
+#!/usr/bin/env bash
 ```
 
-This is particularly convenient during development.
+and:
 
-Instead of copying certain files into the install directory, symlinks can be used.
+```bash
+set -euo pipefail
+```
 
-This means changes to files such as Python launch files can be reflected more conveniently without rebuilding everything every time.
-
-However, if you change package installation rules, CMake configuration, dependencies, or compiled code, rebuilding is still necessary.
+This makes the script stop on errors, unset variables, and failed pipeline commands.
 
 ---
 
-# 38. Building the Workspace
+# 81. My Node Version Manager Setup
 
-From the workspace:
+The script sets:
+
+```bash
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+```
+
+So if `NVM_DIR` is not already defined, it uses:
+
+```text
+$HOME/.nvm
+```
+
+Then it checks:
+
+```bash
+if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
+```
+
+If NVM does not exist, the script stops.
+
+---
+
+# 82. My Node.js Version
+
+The script loads NVM:
+
+```bash
+source "$NVM_DIR/nvm.sh"
+```
+
+and then selects:
+
+```bash
+nvm use 24
+```
+
+Therefore this script specifically expects Node.js 24 through NVM.
+
+---
+
+# 83. My Node-RED Configuration
+
+I use:
+
+```bash
+USER_DIR="${NODE_RED_USER_DIR:-$HOME/.node-red}"
+PORT="${NODE_RED_PORT:-1880}"
+```
+
+So my defaults are:
+
+```text
+Node-RED user directory:
+$HOME/.node-red
+
+Port:
+1880
+```
+
+These can be overridden through environment variables.
+
+---
+
+# 84. Starting Node-RED
+
+My script finally executes:
+
+```bash
+exec node-red \
+    --userDir "$USER_DIR" \
+    --port "$PORT" \
+    "$@"
+```
+
+The `exec` means the Node-RED process replaces the shell script process.
+
+---
+
+# 85. My Package Installation Structure
+
+My three packages use CMake.
+
+The common structure is:
+
+```text
+find_package(ament_cmake REQUIRED)
+
+install(DIRECTORY
+    ...
+    DESTINATION share/${PROJECT_NAME}
+)
+
+ament_package()
+```
+
+---
+
+# 86. `robot_simulation/CMakeLists.txt`
+
+My simulation package installs:
+
+```text
+launch
+config
+world
+```
+
+using:
+
+```cmake
+install(DIRECTORY
+  launch
+  config
+  world
+  DESTINATION share/${PROJECT_NAME}
+)
+```
+
+Therefore ROS 2 can find:
+
+```text
+simulation.launch.py
+diffdrive.yaml
+joints.yaml
+robot_world.world
+turtlebot3_world/
+```
+
+after installation.
+
+---
+
+# 87. `robot_control/CMakeLists.txt`
+
+My control package installs:
+
+```text
+launch
+config
+```
+
+using:
+
+```cmake
+install(DIRECTORY
+  launch
+  config
+  DESTINATION share/${PROJECT_NAME}
+)
+```
+
+Therefore:
+
+```text
+control.launch.py
+joy_config.yaml
+teleop_twist.yaml
+twist_mux.yaml
+keyboard_twist.yaml
+```
+
+are available from the installed package.
+
+---
+
+# 88. My `package.xml` Situation
+
+My package files currently contain the basic:
+
+```xml
+<buildtool_depend>ament_cmake</buildtool_depend>
+```
+
+and test dependencies.
+
+They currently do not explicitly list all the runtime ROS packages used by the launch files.
+
+For example, `robot_control` uses:
+
+```text
+joy
+teleop_twist_joy
+teleop_twist_keyboard
+twist_mux
+```
+
+but these are not currently listed as `<exec_depend>` entries in its `package.xml`.
+
+Likewise, `robot_simulation` uses packages such as:
+
+```text
+gazebo_ros
+controller_manager
+```
+
+through the launch file.
+
+This README records the current state rather than silently changing it.
+
+---
+
+# 89. Build My Workspace
+
+From my workspace:
 
 ```bash
 cd ~/ros2_ws
@@ -1393,1168 +2827,887 @@ Build:
 colcon build --symlink-install
 ```
 
-Build a specific package:
+Then:
 
 ```bash
-colcon build --symlink-install --packages-select my_package
-```
-
-Build multiple packages:
-
-```bash
-colcon build --symlink-install --packages-select package_a package_b
+source install/setup.bash
 ```
 
 ---
 
-# 39. Sourcing the Workspace
+# 90. Run My Simulation
 
-After building:
-
-```bash
-source ~/ros2_ws/install/setup.bash
-```
-
-This allows the current terminal to find your packages.
-
-You can also source ROS 2 first:
+The main launch command is:
 
 ```bash
-source /opt/ros/humble/setup.bash
-source ~/ros2_ws/install/setup.bash
+ros2 launch robot_simulation simulation.launch.py
 ```
 
-Typical order:
+This starts my complete system.
+
+Conceptually:
 
 ```text
-ROS 2 Humble
-     ↓
-Your workspace
-     ↓
-Your packages
-     ↓
-Your launch files
+ros2 launch robot_simulation simulation.launch.py
+                    |
+                    v
+          simulation.launch.py
+                    |
+          +---------+---------+
+          |                   |
+          v                   v
+ display.launch.py      control.launch.py
+          |                   |
+          v                   v
+ robot description       joystick
+ robot state publisher   keyboard
+ RViz                    twist_mux
+          |                   |
+          +---------+---------+
+                    |
+                    v
+                  Gazebo
+                    |
+                    v
+             robot simulation
 ```
 
 ---
 
-# 40. Running Launch Files
+# 91. Run My Display Only
 
-General syntax:
+My display launch can be run directly:
 
 ```bash
-ros2 launch <package_name> <launch_file>
+ros2 launch robot_description display.launch.py
+```
+
+This starts:
+
+```text
+robot_state_publisher
+RViz
+```
+
+and the joint-state publisher nodes according to my current `jsp_gui` condition.
+
+---
+
+# 92. Run My Control Only
+
+My control launch can be run directly:
+
+```bash
+ros2 launch robot_control control.launch.py
+```
+
+This starts:
+
+```text
+joy_node
+teleop_twist_joy_node
+keyboard teleop after 5 seconds
+twist_mux_node
+```
+
+---
+
+# 93. My Launch Arguments
+
+For `simulation.launch.py`:
+
+```text
+gui
+```
+
+Default:
+
+```text
+true
 ```
 
 Example:
 
 ```bash
-ros2 launch my_package robot.launch.py
+ros2 launch robot_simulation simulation.launch.py gui:=false
 ```
 
-ROS 2 searches the installed package for the requested launch file.
+For `display.launch.py`:
 
----
-
-# 41. Launch Arguments From Terminal
+```text
+jsp_gui
+jsp
+rviz_config
+```
 
 Example:
 
 ```bash
-ros2 launch my_package robot.launch.py use_sim_time:=true
+ros2 launch robot_description display.launch.py jsp_gui:=true
 ```
 
-Multiple arguments:
+or:
 
 ```bash
-ros2 launch my_package robot.launch.py \
-    use_sim_time:=true \
-    use_rviz:=false
-```
-
-This is one of the biggest advantages of launch files.
-
-You can change configuration without editing Python code.
-
----
-
-# 42. Checking Available Launch Arguments
-
-Use:
-
-```bash
-ros2 launch my_package robot.launch.py --show-args
-```
-
-This displays the arguments declared by the launch file.
-
-Very useful when you forget what options are available.
-
----
-
-# 43. ROS 2 Debugging Commands
-
-## List nodes
-
-```bash
-ros2 node list
+ros2 launch robot_description display.launch.py rviz_config:=/path/to/file.rviz
 ```
 
 ---
 
-## List topics
+# 94. My Full Startup Sequence
+
+When I run:
+
+```bash
+ros2 launch robot_simulation simulation.launch.py
+```
+
+my intended system startup is:
+
+```text
+1. simulation.launch.py starts
+        |
+        v
+2. display.launch.py is included
+        |
+        +--> robot_state_publisher
+        +--> joint state publisher conditions
+        +--> RViz
+        |
+        v
+3. control.launch.py is included
+        |
+        +--> joy_node
+        +--> teleop_twist_joy
+        +--> keyboard teleop after 5 sec
+        +--> twist_mux
+        |
+        v
+4. controller spawners start
+        |
+        +--> joint_state_broadcaster
+        +--> diff_drive_base_controller
+        |
+        v
+5. Gazebo launch starts
+        |
+        v
+6. robot_world.world loads
+        |
+        v
+7. Gazebo ROS 2 control plugin provides controller manager
+        |
+        v
+8. robot is spawned from /robot_description
+        |
+        v
+9. /cmd_vel reaches diff_drive_base_controller
+        |
+        v
+10. wheels are controlled
+```
+
+Because ROS 2 launch actions are started as part of one launch system, the exact timing between concurrently started actions is not simply the order in the Python file.
+
+This is particularly important for the controller spawners and Gazebo.
+
+---
+
+# 95. Important Timing Detail in My Simulation
+
+My code adds the controller spawners before the Gazebo launch action:
+
+```text
+joint_state_broadcaster spawner
+diff_drive spawner
+spawn_entity
+Gazebo launch
+```
+
+However, adding them in this order does not mean Gazebo completely starts first and then the spawners automatically wait.
+
+The spawners have:
+
+```text
+--controller-manager-timeout 30
+```
+
+which is important because the controller manager comes from the Gazebo `gazebo_ros2_control` system.
+
+Therefore my 30-second timeout is relevant to allowing the controller manager time to become available.
+
+---
+
+# 96. My Complete Robot Architecture
+
+```text
+                         simulation.launch.py
+                                  |
+             +--------------------+--------------------+
+             |                    |                    |
+             v                    v                    v
+      display.launch.py    control.launch.py      Gazebo launch
+             |                    |                    |
+             |                    |                    v
+             |                    |              robot_world.world
+             |                    |
+             |                    +-----------------------------+
+             |                                                  |
+             v                                                  v
+     robot_state_publisher                              Gazebo control
+             |                                                  |
+             v                                                  v
+             TF                                      controller_manager
+             |                                                  |
+             v                                                  |
+            RViz                                      +---------+---------+
+                                                       |                   |
+                                                       v                   v
+                                                joint_state_broadcaster   diff_drive
+                                                                           controller
+                                                                                |
+                                                                                v
+                                                                            wheels
+```
+
+---
+
+# 97. Complete Control Architecture
+
+```text
+                         Controller
+                             |
+                             v
+                          /joy
+                             |
+                             v
+                     teleop_twist_joy
+                             |
+                             v
+                       /joy/cmd_vel
+                             |
+                             |
+                             +----------------------+
+                                                    |
+Keyboard                                            |
+    |                                               |
+    v                                               |
+teleop_twist_keyboard                               |
+    |                                               |
+    v                                               |
+/key/cmd_vel                                        |
+    |                                               |
+    +--------------------+--------------------------+
+                         |
+                         v
+                     twist_mux
+                         |
+                         v
+                      /cmd_vel
+                         |
+                         v
+             diff_drive_base_controller
+                         |
+               +---------+---------+
+               |                   |
+               v                   v
+      base_to_left_wheel   base_to_right_wheel
+               |                   |
+               v                   v
+          left wheel          right wheel
+```
+
+---
+
+# 98. Complete Robot Description Architecture
+
+```text
+                         assy.urdf
+                             |
+        +--------------------+--------------------+
+        |         |          |          |         |
+        v         v          v          v         v
+      body     left wheel  right wheel shaft    caster
+        |         |          |          |         |
+        +---------+----------+----------+---------+
+                             |
+                             v
+                       Robot Model
+                             |
+                 +-----------+-----------+
+                 |                       |
+                 v                       v
+        robot_state_publisher         Gazebo
+                 |                       |
+                 v                       v
+                 TF               gazebo_ros2_control
+                 |                       |
+                 v                       v
+                RViz              Controllers
+```
+
+---
+
+# 99. Files That Are Actually Connected
+
+## Robot description
+
+```text
+display.launch.py
+       |
+       v
+assy.urdf
+       |
+       +-- body.urdf
+       +-- wheel_left.urdf
+       +-- wheel_right.urdf
+       +-- shaft.urdf
+       +-- caster.urdf
+```
+
+## Simulation
+
+```text
+simulation.launch.py
+       |
+       +-- display.launch.py
+       |
+       +-- control.launch.py
+       |
+       +-- robot_world.world
+       |
+       +-- diffdrive.yaml
+```
+
+## Control
+
+```text
+control.launch.py
+       |
+       +-- joy_config.yaml
+       +-- teleop_twist.yaml
+       +-- keyboard_twist.yaml
+       +-- twist_mux.yaml
+```
+
+---
+
+# 100. My Most Important Things to Remember
+
+## If I want to change the robot shape
+
+Go to:
+
+```text
+robot_description/urdf/
+```
+
+especially:
+
+```text
+assy.urdf
+body.urdf
+wheel_left.urdf
+wheel_right.urdf
+shaft.urdf
+caster.urdf
+```
+
+---
+
+## If I want to change RViz
+
+Go to:
+
+```text
+robot_description/rviz/urdf.rviz
+```
+
+---
+
+## If I want to change joystick mapping
+
+Go to:
+
+```text
+robot_control/config/teleop_twist.yaml
+```
+
+---
+
+## If I want to change joystick device settings
+
+Go to:
+
+```text
+robot_control/config/joy_config.yaml
+```
+
+---
+
+## If I want to change keyboard speed
+
+Go to:
+
+```text
+robot_control/config/keyboard_twist.yaml
+```
+
+---
+
+## If I want to change which command has priority
+
+Go to:
+
+```text
+robot_control/config/twist_mux.yaml
+```
+
+---
+
+## If I want to change wheel/controller settings
+
+Go to:
+
+```text
+robot_simulation/config/diffdrive.yaml
+```
+
+---
+
+## If I want to change the Gazebo world
+
+Go to:
+
+```text
+robot_simulation/world/robot_world.world
+```
+
+and:
+
+```text
+robot_simulation/world/turtlebot3_world/
+```
+
+---
+
+## If I want to change the main startup sequence
+
+Go to:
+
+```text
+robot_simulation/launch/simulation.launch.py
+```
+
+---
+
+## If I want to change joystick/keyboard startup
+
+Go to:
+
+```text
+robot_control/launch/control.launch.py
+```
+
+---
+
+## If I want to change robot visualization startup
+
+Go to:
+
+```text
+robot_description/launch/display.launch.py
+```
+
+---
+
+# 101. My Three Launch Files in One Sentence
+
+```text
+display.launch.py
+    = robot model + robot state publisher + RViz
+
+control.launch.py
+    = joystick + keyboard + twist mux
+
+simulation.launch.py
+    = display + control + Gazebo + controllers + robot spawning
+```
+
+This is probably the most useful short summary of my project.
+
+---
+
+# 102. My Main Command
+
+The command I should remember is:
+
+```bash
+ros2 launch robot_simulation simulation.launch.py
+```
+
+Because this launch file pulls the other parts of my system together.
+
+---
+
+# 103. Debugging My System
+
+If the robot does not move:
 
 ```bash
 ros2 topic list
 ```
 
----
+Check:
 
-## List services
-
-```bash
-ros2 service list
+```text
+/joy
+/joy/cmd_vel
+/key/cmd_vel
+/cmd_vel
 ```
 
----
-
-## List actions
-
-```bash
-ros2 action list
-```
-
----
-
-## List parameters
-
-```bash
-ros2 param list
-```
-
----
-
-## Show package
-
-```bash
-ros2 pkg list
-```
-
----
-
-## Find package
-
-```bash
-ros2 pkg prefix <package_name>
-```
-
----
-
-# 44. Node Debugging
-
-List nodes:
-
-```bash
-ros2 node list
-```
-
-Get information:
-
-```bash
-ros2 node info /node_name
-```
-
-This can show:
-
-- publishers
-- subscribers
-- services
-- action servers
-- action clients
-
-Very useful when debugging communication.
-
----
-
-# 45. Topic Debugging
-
-List topics:
-
-```bash
-ros2 topic list
-```
-
-Get information:
-
-```bash
-ros2 topic info /cmd_vel
-```
-
-See data:
+Then:
 
 ```bash
 ros2 topic echo /cmd_vel
 ```
 
-Check publishing frequency:
+If `/cmd_vel` changes when I use the controller, my control chain is working up to the mux output.
 
-```bash
-ros2 topic hz /cmd_vel
-```
-
-This is useful for checking whether a node is actually publishing data.
-
----
-
-# 46. Parameter Debugging
-
-List parameters:
-
-```bash
-ros2 param list
-```
-
-Get a parameter:
-
-```bash
-ros2 param get /node_name parameter_name
-```
-
-Set a parameter:
-
-```bash
-ros2 param set /node_name parameter_name value
-```
-
----
-
-# 47. TF Debugging
-
-For TF:
-
-```bash
-ros2 run tf2_tools view_frames
-```
-
-This can generate a TF tree.
-
-The concept is:
-
-```text
-base_link
-   │
-   ├── link1
-   │    │
-   │    └── link2
-   │
-   └── camera_link
-```
-
-If RViz displays the robot incorrectly, TF is one of the first things to check.
-
----
-
-# 48. RQT Graph
-
-Run:
-
-```bash
-rqt_graph
-```
-
-This provides a visual representation of ROS nodes and topics.
-
-Example:
-
-```text
-teleop
-  │
-  │ /cmd_vel
-  ▼
-controller
-  │
-  │ motor commands
-  ▼
-robot
-```
-
-If you expected two nodes to communicate but there is no connection, `rqt_graph` is very useful.
-
----
-
-# 49. Common Problems
-
-## Problem: `Package not found`
-
-Example:
-
-```text
-Package 'my_package' not found
-```
-
-Try:
-
-```bash
-source /opt/ros/humble/setup.bash
-source ~/ros2_ws/install/setup.bash
-```
-
-Then:
-
-```bash
-ros2 pkg list | grep my_package
-```
-
----
-
-## Problem: Launch file not found
-
-Example:
-
-```text
-file 'robot.launch.py' was not found
-```
-
-Check:
-
-```bash
-ros2 pkg prefix my_package
-```
-
-Then check whether the launch file was installed.
-
-Usually the problem is that the `launch/` directory was not installed correctly.
-
----
-
-## Problem: Python launch file changed but ROS still uses old code
-
-Try:
-
-```bash
-colcon build --symlink-install
-```
-
-Then:
-
-```bash
-source ~/ros2_ws/install/setup.bash
-```
-
----
-
-## Problem: Node executable not found
-
-Example:
-
-```text
-executable 'my_node' not found
-```
-
-Check:
-
-```bash
-ros2 pkg executables my_package
-```
-
-This shows the executable names ROS 2 knows about.
-
----
-
-## Problem: RViz opens but robot does not appear
-
-Check:
-
-```bash
-ros2 topic list
-```
-
-Check TF:
-
-```bash
-ros2 run tf2_tools view_frames
-```
-
-Check robot state publisher:
+Then check:
 
 ```bash
 ros2 node list
 ```
 
-Look for:
-
-```text
-/robot_state_publisher
-```
-
-Also check whether RViz has the correct:
-
-```text
-Fixed Frame
-```
+I should see the relevant nodes.
 
 ---
 
-# 50. How to Add a New Launch File
+# 104. Debugging My Controller
 
-Inside the package:
-
-```text
-my_package/
-└── launch/
-    └── new_robot.launch.py
-```
-
-Create:
-
-```python
-from launch import LaunchDescription
-
-
-def generate_launch_description():
-
-    return LaunchDescription([])
-```
-
-Then add actions.
-
-For example:
-
-```python
-from launch import LaunchDescription
-from launch_ros.actions import Node
-
-
-def generate_launch_description():
-
-    robot_node = Node(
-        package='my_package',
-        executable='robot_node',
-        output='screen'
-    )
-
-    return LaunchDescription([
-        robot_node
-    ])
-```
-
-Build:
+Check:
 
 ```bash
-cd ~/ros2_ws
-colcon build --symlink-install
+ros2 control list_controllers
 ```
 
-Source:
-
-```bash
-source ~/ros2_ws/install/setup.bash
-```
-
-Run:
-
-```bash
-ros2 launch my_package new_robot.launch.py
-```
-
----
-
-# 51. How to Add a New Node
-
-Suppose you already have:
+I should expect my controllers to include:
 
 ```text
-my_package
-└── my_node
+joint_state_broadcaster
+diff_drive_base_controller
 ```
 
-To launch it:
+If the diff-drive controller is not active, `/cmd_vel` may exist but the robot will not move.
 
-```python
-Node(
-    package='my_package',
-    executable='my_node',
-    output='screen'
-)
-```
+---
 
-The important information is:
+# 105. Debugging My Topics
+
+My important command topics are:
 
 ```text
-package
-   ↓
-Which ROS package?
-
-executable
-   ↓
-Which executable?
-
-output
-   ↓
-Where should output appear?
+/joy/cmd_vel
+/key/cmd_vel
+/rqt/cmd_vel
+/cmd_vel
 ```
 
----
-
-# 52. How to Make One Launch File Start Another
-
-Parent:
+The flow is:
 
 ```text
-main.launch.py
+/joy/cmd_vel
+       |
+       v
+   twist_mux
+       |
+       v
+   /cmd_vel
+
+/key/cmd_vel
+       |
+       v
+   twist_mux
 ```
 
-Child:
+---
+
+# 106. Debugging My Robot Description
+
+Check:
+
+```bash
+ros2 topic echo /robot_description
+```
+
+The robot description should be available after my `robot_state_publisher` starts.
+
+If the robot does not appear correctly in RViz, first check:
 
 ```text
-robot.launch.py
-```
-
-Parent launch file:
-
-```python
-IncludeLaunchDescription(
-    PythonLaunchDescriptionSource(
-        robot_launch_file
-    )
-)
-```
-
-Result:
-
-```text
-main.launch.py
-      │
-      │ include
-      ▼
-robot.launch.py
-      │
-      ├── robot_state_publisher
-      ├── joint_state_publisher
-      └── RViz
-```
-
-This is useful for creating modular launch systems.
-
----
-
-# 53. How to Pass Values Between Launch Files
-
-Parent:
-
-```python
-IncludeLaunchDescription(
-    PythonLaunchDescriptionSource(
-        child_launch
-    ),
-    launch_arguments={
-        'use_rviz': 'true'
-    }.items()
-)
-```
-
-Child:
-
-```python
-use_rviz = LaunchConfiguration('use_rviz')
-```
-
-Then:
-
-```python
-Node(
-    package='rviz2',
-    executable='rviz2',
-    condition=IfCondition(use_rviz)
-)
-```
-
-Flow:
-
-```text
-Parent
- │
- │ use_rviz=true
- ▼
-Child
- │
- ▼
-IfCondition
- │
- ▼
-RViz starts
-```
-
----
-
-# 54. How to Conditionally Start a Node
-
-Declare:
-
-```python
-DeclareLaunchArgument(
-    'use_rviz',
-    default_value='true'
-)
-```
-
-Retrieve:
-
-```python
-use_rviz = LaunchConfiguration('use_rviz')
-```
-
-Use:
-
-```python
-Node(
-    package='rviz2',
-    executable='rviz2',
-    condition=IfCondition(use_rviz)
-)
-```
-
-Then run:
-
-```bash
-ros2 launch my_package robot.launch.py use_rviz:=false
-```
-
-RViz will not start.
-
----
-
-# 55. How to Delay a Node
-
-Example:
-
-```python
-TimerAction(
-    period=5.0,
-    actions=[
-        my_node
-    ]
-)
-```
-
-The node starts approximately five seconds after the launch system starts that action.
-
-Useful when:
-
-```text
-Node A
-   │
-   │ initialization
-   ▼
-wait
-   │
-   ▼
-Node B
-```
-
----
-
-# 56. How to Run a Normal Linux Command
-
-Use:
-
-```python
-ExecuteProcess(
-    cmd=['command', 'argument'],
-    output='screen'
-)
-```
-
-For example:
-
-```python
-ExecuteProcess(
-    cmd=['echo', 'Hello ROS 2'],
-    output='screen'
-)
-```
-
-This is not the same as:
-
-```python
-Node()
-```
-
-Remember:
-
-```text
-ROS 2 executable
-    → Node()
-
-External command
-    → ExecuteProcess()
-```
-
----
-
-# 57. ROS 2 Launch Cheat Sheet
-
-| What you want | Use |
-|---|---|
-| Start ROS node | `Node()` |
-| Start another launch file | `IncludeLaunchDescription()` |
-| Start normal Linux process | `ExecuteProcess()` |
-| Wait before starting something | `TimerAction()` |
-| Create CLI option | `DeclareLaunchArgument()` |
-| Read CLI option | `LaunchConfiguration()` |
-| Conditional startup | `IfCondition()` |
-| Opposite condition | `UnlessCondition()` |
-| Find package | `FindPackageShare()` |
-| Build path | `PathJoinSubstitution()` |
-| Create launch description | `LaunchDescription()` |
-| Define launch file entry point | `generate_launch_description()` |
-
----
-
-# 58. Recommended Workflow
-
-When developing a ROS 2 system, use this workflow.
-
-## Step 1: Source ROS 2
-
-```bash
-source /opt/ros/humble/setup.bash
-```
-
----
-
-## Step 2: Go to workspace
-
-```bash
-cd ~/ros2_ws
-```
-
----
-
-## Step 3: Build
-
-```bash
-colcon build --symlink-install
-```
-
----
-
-## Step 4: Source workspace
-
-```bash
-source install/setup.bash
-```
-
----
-
-## Step 5: Check package
-
-```bash
-ros2 pkg list | grep my_package
-```
-
----
-
-## Step 6: Check executables
-
-```bash
-ros2 pkg executables my_package
-```
-
----
-
-## Step 7: Run launch file
-
-```bash
-ros2 launch my_package robot.launch.py
-```
-
----
-
-## Step 8: Debug
-
-In another terminal:
-
-```bash
-source /opt/ros/humble/setup.bash
-source ~/ros2_ws/install/setup.bash
-```
-
-Then:
-
-```bash
-ros2 node list
-```
-
-```bash
-ros2 topic list
-```
-
-```bash
-rqt_graph
-```
-
----
-
-# 59. Future Expansion
-
-This repository can eventually become a complete personal ROS 2 reference.
-
-Potential sections/files to add:
-
-```text
-launch/
-├── robot.launch.py
-├── simulation.launch.py
-├── rviz.launch.py
-├── teleop.launch.py
-├── sensors.launch.py
-└── navigation.launch.py
-```
-
-A large system could then look like:
-
-```text
-                    main.launch.py
-                          │
-          ┌───────────────┼────────────────┐
-          │               │                │
-          ▼               ▼                ▼
-     robot.launch     sensors.launch    rviz.launch
-          │               │                │
-          │               │                │
-          ▼               ▼                ▼
-     Robot State       LiDAR/Camera       RViz
-     Publisher
-          │
-          ▼
-         TF
-```
-
-This approach keeps each launch file focused on one responsibility.
-
----
-
-# Important Mental Model
-
-The most important thing to remember is that a launch file is basically a **startup manager**.
-
-It does not need to contain the implementation of every node.
-
-Instead:
-
-```text
-Launch File
-     │
-     ├── Start Node
-     │
-     ├── Start Node
-     │
-     ├── Include Launch File
-     │        │
-     │        ├── Start Node
-     │        └── Start Node
-     │
-     ├── Start external process
-     │
-     ├── Wait
-     │
-     └── Apply conditions
-```
-
-Think of it as a manager.
-
----
-
-# The Most Important ROS 2 Launch Concepts
-
-## 1. `Node`
-
-Starts a ROS 2 node.
-
-```python
-Node(...)
-```
-
----
-
-## 2. `IncludeLaunchDescription`
-
-Starts another launch file.
-
-```python
-IncludeLaunchDescription(...)
-```
-
-Think:
-
-```text
-launch file inside launch file
-```
-
----
-
-## 3. `ExecuteProcess`
-
-Starts a normal external process.
-
-```python
-ExecuteProcess(...)
-```
-
----
-
-## 4. `TimerAction`
-
-Delays an action.
-
-```python
-TimerAction(...)
-```
-
----
-
-## 5. `DeclareLaunchArgument`
-
-Creates an option that can be changed from the terminal.
-
-```python
-DeclareLaunchArgument(...)
-```
-
----
-
-## 6. `LaunchConfiguration`
-
-Reads the option.
-
-```python
-LaunchConfiguration(...)
-```
-
----
-
-## 7. `IfCondition`
-
-Run something only when a condition is true.
-
-```python
-IfCondition(...)
-```
-
----
-
-## 8. `UnlessCondition`
-
-Run something when a condition is false.
-
-```python
-UnlessCondition(...)
-```
-
----
-
-## 9. `LaunchDescription`
-
-Contains the actions that should be launched.
-
-```python
-LaunchDescription([
-    ...
-])
-```
-
----
-
-# Complete Conceptual Example
-
-Imagine this command:
-
-```bash
-ros2 launch my_robot main.launch.py use_rviz:=true
-```
-
-ROS 2 performs approximately this flow:
-
-```text
-ros2 launch
-     │
-     ▼
-Find package:
-my_robot
-     │
-     ▼
-Find:
-main.launch.py
-     │
-     ▼
-Call:
-generate_launch_description()
-     │
-     ▼
-Declare:
-use_rviz
-     │
-     ▼
-Read:
-use_rviz=true
-     │
-     ├───────────────────────────┐
-     │                           │
-     ▼                           ▼
-Include robot.launch       Start teleop
-     │
-     ▼
+assy.urdf
 robot_state_publisher
-     │
-     ▼
 TF
-     │
-     ▼
-RViz
+RViz Fixed Frame
 ```
-
-This is the core idea behind ROS 2 launch files.
 
 ---
 
-# Quick Daily Reference
+# 107. Important Current Code Notes
 
-When you forget what to use:
+These are not changes. They are observations of my current implementation.
+
+## `jsp` is currently unused
+
+I declare:
+
+```python
+jsp
+```
+
+but don't use it to control a node.
+
+---
+
+## `jsp_gui` controls both joint-state publishers
+
+Both currently use:
+
+```python
+IfCondition(LaunchConfiguration('jsp_gui'))
+```
+
+Therefore both start when `jsp_gui=true`.
+
+---
+
+## `world_path` is currently unused
+
+I calculate:
+
+```python
+world_path
+```
+
+but the environment-variable action that uses it is commented out.
+
+---
+
+## Several imports are unused
+
+Some imported launch classes and substitutions are currently not used.
+
+---
+
+## `joints.yaml` is not directly loaded by my active launch sequence
+
+My Gazebo control configuration uses:
 
 ```text
-"I want to start a ROS node."
-        ↓
-      Node()
+diffdrive.yaml
+```
 
-"I want to start another launch file."
-        ↓
-IncludeLaunchDescription()
+through the Gazebo ROS 2 control plugin.
 
-"I want to run a Linux command."
-        ↓
-ExecuteProcess()
+---
 
-"I want to wait before starting something."
-        ↓
-TimerAction()
+## Runtime dependencies are not fully declared
 
-"I want an option from terminal."
-        ↓
-DeclareLaunchArgument()
+My current `package.xml` files are minimal.
 
-"I want to read that option."
-        ↓
-LaunchConfiguration()
+The code itself depends on more ROS packages than are explicitly declared there.
 
-"I want to run something only if true."
-        ↓
-IfCondition()
+This is something to remember if I move the workspace to another computer.
 
-"I want to run something only if false."
-        ↓
-UnlessCondition()
+---
 
-"I need a package's installed location."
-        ↓
-FindPackageShare()
+# 108. The One Diagram I Should Remember
 
-"I need to construct a path."
-        ↓
-PathJoinSubstitution()
+```text
+                    ros2 launch
+                         |
+                         v
+              simulation.launch.py
+                         |
+          +--------------+--------------+
+          |              |              |
+          v              v              v
+       DISPLAY         CONTROL        GAZEBO
+          |              |              |
+          |              |              |
+          v              v              v
+     robot_state       joystick      world
+     publisher         keyboard      robot spawn
+          |              |              |
+          v              v              v
+         TF          twist_mux      ros2_control
+          |              |              |
+          v              v              v
+        RViz          /cmd_vel      controllers
+                         |              |
+                         +------+-------+
+                                |
+                                v
+                              wheels
 ```
 
 ---
 
-# Basic Commands
+# 109. Final Personal Reference
 
-```bash
-# Source ROS 2
-source /opt/ros/humble/setup.bash
+My project is divided like this:
 
-# Go to workspace
-cd ~/ros2_ws
+```text
+robot_description
+    |
+    | "What is my robot?"
+    |
+    +-- URDF
+    +-- robot_state_publisher
+    +-- RViz
+    +-- Node-RED script
 
-# Build
-colcon build --symlink-install
 
-# Source workspace
-source install/setup.bash
+robot_control
+    |
+    | "How do I control my robot?"
+    |
+    +-- Joystick
+    +-- Keyboard
+    +-- RQT input
+    +-- twist_mux
 
-# List packages
-ros2 pkg list
 
-# List executables
-ros2 pkg executables
-
-# Run launch file
-ros2 launch <package> <launch_file>
-
-# Show launch arguments
-ros2 launch <package> <launch_file> --show-args
-
-# List nodes
-ros2 node list
-
-# List topics
-ros2 topic list
-
-# List services
-ros2 service list
-
-# List parameters
-ros2 param list
-
-# Show node information
-ros2 node info <node>
-
-# Show topic information
-ros2 topic info <topic>
-
-# Read topic
-ros2 topic echo <topic>
-
-# Show topic frequency
-ros2 topic hz <topic>
-
-# Start RQT graph
-rqt_graph
-
-# Generate TF tree
-ros2 run tf2_tools view_frames
+robot_simulation
+    |
+    | "Where does my robot run?"
+    |
+    +-- Gazebo
+    +-- World
+    +-- Robot spawning
+    +-- ros2_control
+    +-- Diff-drive controller
 ```
 
+And the three connect together like this:
+
+```text
+                    robot_description
+                           |
+                           v
+                       Robot Model
+                           |
+              +------------+-------------+
+              |                          |
+              v                          v
+             RViz                      Gazebo
+                                         |
+                                         v
+                              ros2_control system
+                                         |
+                                         v
+                              diff_drive_controller
+                                         ^
+                                         |
+                                      /cmd_vel
+                                         ^
+                                         |
+                                    twist_mux
+                                    ^       ^
+                                   /         \
+                          /joy/cmd_vel     /key/cmd_vel
+                               ^               ^
+                               |               |
+                         joystick          keyboard
+```
+
+That is the architecture of **my actual current code**.
+
 ---
 
-# Author
+# 110. Quick File Reference
 
-**Muhammad Al Imran Bin Salim**
-
-GitHub:
-
-https://github.com/imranlim
-
-Repository:
-
-https://github.com/imranlim/my-own-ros2-launch-file
+| File | What I use it for |
+|---|---|
+| `robot_description/launch/display.launch.py` | Robot description, robot state publisher and RViz |
+| `robot_description/urdf/assy.urdf` | Main robot assembly |
+| `robot_description/urdf/body.urdf` | Main robot body |
+| `robot_description/urdf/wheel_left.urdf` | Left wheel |
+| `robot_description/urdf/wheel_right.urdf` | Right wheel |
+| `robot_description/urdf/shaft.urdf` | Shaft |
+| `robot_description/urdf/caster.urdf` | Caster |
+| `robot_description/rviz/urdf.rviz` | RViz configuration |
+| `robot_description/scripts/start_node_red.sh` | Start Node-RED with Node.js 24 |
+| `robot_simulation/launch/simulation.launch.py` | Main simulation startup |
+| `robot_simulation/world/robot_world.world` | Gazebo world |
+| `robot_simulation/config/diffdrive.yaml` | ros2_control and diff-drive configuration |
+| `robot_simulation/config/joints.yaml` | Joint state broadcaster configuration |
+| `robot_control/launch/control.launch.py` | Joystick, keyboard and mux startup |
+| `robot_control/config/joy_config.yaml` | Joystick device configuration |
+| `robot_control/config/teleop_twist.yaml` | Joystick-to-velocity mapping |
+| `robot_control/config/keyboard_twist.yaml` | Keyboard teleop configuration |
+| `robot_control/config/twist_mux.yaml` | Velocity input priorities and muxing |
 
 ---
 
-# Final Note
+# 111. Final Mental Model
 
-This repository is intended to be a **personal ROS 2 launch-file reference**.
+When I come back to this project later, I only need to remember:
 
-When adding a new launch file, try to document:
+```text
+simulation.launch.py
+        |
+        +--> display.launch.py
+        |       |
+        |       +--> assy.urdf
+        |       +--> robot_state_publisher
+        |       +--> RViz
+        |
+        +--> control.launch.py
+        |       |
+        |       +--> joystick
+        |       +--> joystick teleop
+        |       +--> keyboard teleop
+        |       +--> twist_mux
+        |
+        +--> Gazebo
+        |       |
+        |       +--> robot_world.world
+        |       +--> robot spawn
+        |       +--> ros2_control
+        |
+        +--> controllers
+                |
+                +--> joint_state_broadcaster
+                +--> diff_drive_base_controller
 
-1. What the launch file does.
-2. Which nodes it starts.
-3. Which launch files it includes.
-4. Which arguments it accepts.
-5. Which parameters it uses.
-6. Which topics are remapped.
-7. Which conditions are used.
-8. Whether anything is delayed.
-9. What external processes are started.
-10. How to run it.
+Control:
 
-The goal is that months later, you can open this repository and understand **why each launch action exists and how the complete ROS 2 system starts** without having to relearn everything from the beginning.
+/joy/cmd_vel
+       \
+        \
+         --> twist_mux --> /cmd_vel --> diff_drive_controller
+        /
+/key/cmd_vel
+```
+
+This is how **my code is connected**.
+
+The most important launch file is:
+
+```text
+robot_simulation/launch/simulation.launch.py
+```
+
+because it brings together my:
+
+```text
+robot_description
+robot_control
+Gazebo
+controllers
+```
+
+into one system.
