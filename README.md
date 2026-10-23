@@ -1,3 +1,7 @@
+![ROS 2 Humble](https://img.shields.io/badge/ROS_2-Humble-blue)
+![Ubuntu](https://img.shields.io/badge/OS-Ubuntu_22.04-orange)
+![License](https://img.shields.io/badge/License-Apache_2.0-green)
+
 # ROS 2 Robot Project
 
 My ROS 2 robot project contains three main packages:
